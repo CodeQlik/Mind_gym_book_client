@@ -7,7 +7,7 @@ export default function MainLayout({ children }) {
     const pathname = usePathname();
 
     // Pages where we don't want Header and Footer
-    const excludedPages = ["/login", "/register"];
+    const excludedPages = ["/login", "/register", "/forgot-password"];
     const shouldShowLayout = !excludedPages.includes(pathname);
 
     if (!shouldShowLayout) {

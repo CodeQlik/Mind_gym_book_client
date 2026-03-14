@@ -1,18 +1,22 @@
-import { Feather, ChevronDown, Lock, Phone, LogOut, User as UserIcon, ShoppingCart, Heart, X, CheckCircle2 } from "lucide-react";
+import { Feather, ChevronDown, Lock, Phone, LogOut, User as UserIcon, ShoppingCart, Heart, X, CheckCircle2, Search } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { useSelector, useDispatch } from "react-redux";
 import { logoutUser, fetchProfile } from "@/redux/slices/authSlice";
 import { clearLastAddedItem, fetchCart, mergeGuestCart } from "@/redux/slices/cartSlice";
+import { fetchWishlist } from "@/redux/slices/wishlistSlice";
 import { useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 export default function Header() {
     const { user, token } = useSelector((state) => state.auth);
     const { items, totalQuantity, lastAddedItem } = useSelector((state) => state.cart);
+    const { totalQuantity: wishlistCount } = useSelector((state) => state.wishlist);
     const [showCartPopup, setShowCartPopup] = useState(false);
     const dispatch = useDispatch();
     const pathname = usePathname();
+    const router = useRouter();
+    const [searchTerm, setSearchTerm] = useState("");
 
     useEffect(() => {
         if (token) {
@@ -22,6 +26,7 @@ export default function Header() {
             // If we have local items, merge them. mergeGuestCart will call fetchCart.
             // If no local items, mergeGuestCart will just call fetchCart.
             dispatch(mergeGuestCart());
+            dispatch(fetchWishlist());
         }
     }, [token, user, dispatch]);
 
@@ -43,6 +48,14 @@ export default function Header() {
         { name: "Blog", href: "/blog", dropdown: false },
         { name: "Contact Us", href: "/contact", dropdown: false },
     ];
+
+    const handleSearch = (e) => {
+        e.preventDefault();
+        if (searchTerm.trim()) {
+            router.push(`/books?query=${encodeURIComponent(searchTerm.trim())}`);
+            setSearchTerm("");
+        }
+    };
 
 
     return (
@@ -87,6 +100,28 @@ export default function Header() {
                         );
                     })}
                 </nav>
+
+                {/* Search Bar */}
+                <div className="hidden lg:flex items-center flex-1 max-w-sm mx-4 xl:mx-10">
+                    <form onSubmit={handleSearch} className="w-full relative group">
+                        <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-black/30 group-focus-within:text-primary transition-colors">
+                            <Search size={16} />
+                        </div>
+                        <input
+                            type="text"
+                            placeholder="Find your next read..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full bg-black/5 border border-transparent focus:border-primary/20 focus:bg-white focus:ring-4 focus:ring-primary/5 rounded-full py-2.5 pl-12 pr-4 text-[13px] font-medium placeholder:text-black/30 outline-none transition-all"
+                        />
+                        <button 
+                            type="submit"
+                            className="absolute right-2 top-1/2 -translate-y-1/2 bg-black text-white text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full hover:bg-primary transition-colors opacity-0 group-focus-within:opacity-100"
+                        >
+                            Search
+                        </button>
+                    </form>
+                </div>
 
 
                 {/* Actions */}
@@ -147,6 +182,11 @@ export default function Header() {
                     <div className="relative group">
                         <Link href="/wishlist" className="relative w-9 h-9 flex items-center justify-center text-black border border-black/10 rounded-full hover:bg-primary hover:text-white hover:border-primary transition-all transform hover:-translate-y-1 active:scale-95 shadow-sm">
                             <Heart size={18} />
+                            {wishlistCount > 0 && (
+                                <span className="absolute -top-1 -right-1 bg-primary text-white text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full border-2 border-white">
+                                    {wishlistCount}
+                                </span>
+                            )}
                         </Link>
                     </div>
 

@@ -5,42 +5,20 @@ import Image from "next/image";
 import Link from "next/link";
 import api from "@/lib/axios";
 import { toast } from "react-toastify";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { syncAddToCart } from "@/redux/slices/cartSlice";
+import { fetchWishlist, toggleWishlistSync } from "@/redux/slices/wishlistSlice";
 
 export default function WishlistClient() {
-    const [wishlist, setWishlist] = useState([]);
-    const [loading, setLoading] = useState(true);
     const dispatch = useDispatch();
+    const { items: wishlist, loading } = useSelector((state) => state.wishlist);
 
     useEffect(() => {
-        fetchWishlist();
-    }, []);
-
-    const fetchWishlist = async () => {
-        try {
-            setLoading(true);
-            const response = await api.get("/book/bookmark/all");
-            const data = response.data?.data || [];
-            // Extract the book object from each bookmark record
-            const books = Array.isArray(data) ? data.map(item => item.book).filter(b => b) : [];
-            setWishlist(books);
-        } catch (err) {
-            console.error("Error fetching wishlist:", err);
-            toast.error("Please login to view your wishlist");
-        } finally {
-            setLoading(false);
-        }
-    };
+        dispatch(fetchWishlist());
+    }, [dispatch]);
 
     const handleRemoveFromWishlist = async (bookId) => {
-        try {
-            await api.post("/book/bookmark/toggle", { book_id: bookId });
-            setWishlist(prev => prev.filter(item => item.id !== bookId));
-            toast.success("Removed from wishlist");
-        } catch (err) {
-            toast.error("Failed to remove item");
-        }
+        dispatch(toggleWishlistSync(bookId));
     };
 
     const handleAddToCart = (book) => {

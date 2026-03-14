@@ -2,10 +2,8 @@ import axios from "axios";
 import Cookies from "js-cookie";
 
 const api = axios.create({
-    // Important: Calling the live backend directly from the browser throws "Network Error" (CORS).
-    // So for client-side requests, we call our Next.js /proxy/api/v1 which is configured in next.config.ts
-    // to forward the request to the live backend URL from your .env file.
-    baseURL: process.env.NEXT_PUBLIC_API_URL,
+    // Use proxy for client-side requests to avoid CORS issues
+    baseURL: typeof window !== "undefined" ? "/proxy/api/v1" : process.env.NEXT_PUBLIC_API_URL,
 });
 
 api.interceptors.request.use((config) => {

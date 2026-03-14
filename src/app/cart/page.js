@@ -5,11 +5,17 @@ import { updateCartQuantitySync, removeFromCartSync, clearCartSync, fetchCart, m
 import Image from "next/image";
 import Link from "next/link";
 import { Trash2, Plus, Minus, ShoppingBag, ArrowLeft, CreditCard } from "lucide-react";
+import api from "@/lib/axios";
+import { toast } from "react-toastify";
 
 export default function CartPage() {
     const { items, totalAmount, totalQuantity } = useSelector((state) => state.cart);
     const { token } = useSelector((state) => state.auth);
     const dispatch = useDispatch();
+
+    const [couponCode, setCouponCode] = React.useState("");
+    const [isApplying, setIsApplying] = React.useState(false);
+    const [appliedCoupon, setAppliedCoupon] = React.useState(null);
 
     useEffect(() => {
         if (token) {
@@ -41,6 +47,40 @@ export default function CartPage() {
             cartItemId: item.cartItemId
         }));
     };
+
+    const handleApplyCoupon = async () => {
+        if (!token) {
+            return toast.error("Please login to apply coupons");
+        }
+        if (!couponCode.trim()) {
+            return toast.error("Please enter a coupon code");
+        }
+
+        setIsApplying(true);
+        try {
+            const res = await api.post("/coupons/validate", {
+                code: couponCode,
+                amount: totalAmount
+            });
+            if (res.data?.success) {
+                setAppliedCoupon(res.data.data);
+                toast.success(`Coupon "${couponCode.toUpperCase()}" applied!`);
+            }
+        } catch (error) {
+            toast.error(error.response?.data?.message || "Invalid coupon code");
+            setAppliedCoupon(null);
+        } finally {
+            setIsApplying(false);
+        }
+    };
+
+    const removeCoupon = () => {
+        setAppliedCoupon(null);
+        setCouponCode("");
+        toast.info("Coupon removed");
+    };
+
+    const finalTotal = appliedCoupon ? appliedCoupon.total_amount : totalAmount;
 
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -138,6 +178,17 @@ export default function CartPage() {
                                             <span>Subtotal</span>
                                             <span className="font-bold text-secondary">₹{totalAmount.toLocaleString()}</span>
                                         </div>
+
+                                        {appliedCoupon && (
+                                            <div className="flex justify-between text-emerald-500 animate-in fade-in slide-in-from-right-2">
+                                                <div className="flex items-center gap-1">
+                                                    <span>Discount</span>
+                                                    <span className="text-[10px] bg-emerald-100 px-1.5 py-0.5 rounded uppercase font-black">{appliedCoupon.code}</span>
+                                                </div>
+                                                <span className="font-bold">- ₹{appliedCoupon.discount_amount.toLocaleString()}</span>
+                                            </div>
+                                        )}
+
                                         <div className="flex justify-between text-gray-500">
                                             <span>Shipping</span>
                                             <span className="text-green-500 font-bold">FREE</span>
@@ -148,17 +199,61 @@ export default function CartPage() {
                                         </div>
                                     </div>
 
+                                    {/* Coupon Input */}
+                                    {!appliedCoupon ? (
+                                        <div className="mb-8 p-1 bg-gray-50 rounded-2xl border border-black/5 flex items-center">
+                                            <input 
+                                                type="text"
+                                                placeholder="Promo Code"
+                                                value={couponCode}
+                                                onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                                                className="bg-transparent border-none outline-none px-4 py-2 text-sm font-bold text-secondary flex-grow w-full uppercase placeholder:text-gray-300"
+                                            />
+                                            <button 
+                                                onClick={handleApplyCoupon}
+                                                disabled={isApplying}
+                                                className="bg-secondary text-white px-6 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-primary transition-all disabled:opacity-50 shadow-sm"
+                                            >
+                                                {isApplying ? "..." : "Apply"}
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div className="mb-8 p-3 bg-emerald-50 border border-emerald-100 rounded-2xl flex items-center justify-between animate-in zoom-in-95 duration-300">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center">
+                                                    <Plus className="rotate-45" size={16} />
+                                                </div>
+                                                <div>
+                                                    <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest leading-none mb-1">Coupon Applied</p>
+                                                    <p className="text-xs font-bold text-secondary uppercase">{appliedCoupon.code}</p>
+                                                </div>
+                                            </div>
+                                            <button 
+                                                onClick={removeCoupon}
+                                                className="text-gray-400 hover:text-red-500 p-2 transition-colors"
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
+                                        </div>
+                                    )}
+
                                     <div className="border-t border-gray-100 pt-4 mb-8">
                                         <div className="flex justify-between items-end">
                                             <span className="text-gray-500 font-bold">Total</span>
-                                            <span className="text-3xl font-black text-secondary">₹{totalAmount.toLocaleString()}</span>
+                                            <span className="text-3xl font-black text-secondary">₹{finalTotal.toLocaleString()}</span>
                                         </div>
                                     </div>
 
-                                    <button className="w-full bg-secondary text-white py-5 rounded-xl font-black uppercase tracking-widest text-sm hover:bg-primary transition-all transform hover:-translate-y-1 shadow-lg flex items-center justify-center gap-3">
+                                    <Link 
+                                        href={{
+                                            pathname: '/checkout',
+                                            query: appliedCoupon ? { coupon: appliedCoupon.code } : {}
+                                        }} 
+                                        className="w-full bg-secondary text-white py-5 rounded-xl font-black uppercase tracking-widest text-sm hover:bg-primary transition-all transform hover:-translate-y-1 shadow-lg flex items-center justify-center gap-3 active:scale-95"
+                                    >
                                         <CreditCard size={20} />
-                                        Checkout Now
-                                    </button>
+                                        Complete Purchase
+                                    </Link>
 
                                     <div className="mt-6 flex flex-col gap-4">
                                         <p className="text-[10px] text-gray-400 text-center uppercase font-black tracking-widest">Secure Payments Guaranteed</p>

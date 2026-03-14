@@ -1,11 +1,14 @@
 "use client";
 import React, { useEffect, useState } from "react";
+import { useDispatch } from "react-redux";
+import { syncAddToCart } from "@/redux/slices/cartSlice";
 import api from "@/lib/axios";
 import Image from "next/image";
 import Link from "next/link";
-import { Star, Heart } from "lucide-react";
+import { Star, Heart, ShoppingBag } from "lucide-react";
 
 export default function BookGrid() {
+    const dispatch = useDispatch();
     const [books, setBooks] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -28,11 +31,25 @@ export default function BookGrid() {
             try {
                 const response = await api.get("/book/all");
                 if (response.data.success) {
-                    const allBooks = response.data.data.books || [];
-                    const premiumBooks = allBooks
-                        .filter(book => book.is_premium === true)
-                        .slice(0, 4); // Display exactly 4 books
-                    setBooks(premiumBooks);
+                    const data = response.data.data || {};
+                    let allBooks = [];
+                    const booksSource = data.books || data;
+                    
+                    if (Array.isArray(booksSource)) {
+                        allBooks = booksSource;
+                    } else if (booksSource && typeof booksSource === 'object') {
+                        allBooks = Object.values(booksSource).flat().filter(book => book !== null && typeof book === 'object');
+                    }
+
+                    let premiumBooks = allBooks
+                        .filter(book => book.is_premium === true || book.is_premium === 1 || book.is_premium === "1");
+                    
+                    // Fallback: If no books are marked as premium, just show the first few
+                    if (premiumBooks.length === 0) {
+                        premiumBooks = allBooks;
+                    }
+
+                    setBooks(premiumBooks.slice(0, 4)); // Display exactly 4 books
                 }
             } catch (err) {
                 console.error("Error fetching books:", err);
@@ -108,17 +125,20 @@ export default function BookGrid() {
                                 {/* Rating and Score */}
                                 <div className="flex items-center gap-2 mb-2">
                                     <div className="flex items-center">
-                                        {[...Array(5)].map((_, i) => (
-                                            <Star
-                                                key={i}
-                                                size={11}
-                                                fill={i < 4 ? "#F7941E" : "none"}
-                                                stroke="#F7941E"
-                                                className={i === 4 ? "opacity-30" : ""}
-                                            />
-                                        ))}
+                                        {[...Array(5)].map((_, i) => {
+                                            const rating = book.average_rating || book.rating || 5;
+                                            return (
+                                                <Star
+                                                    key={i}
+                                                    size={11}
+                                                    fill={i < Math.floor(rating) ? "#F7941E" : "none"}
+                                                    stroke="#F7941E"
+                                                    className={i >= Math.floor(rating) ? "opacity-30" : ""}
+                                                />
+                                            );
+                                        })}
                                     </div>
-                                    <span className="text-[10px] font-bold text-gray-300 font-sans tracking-tight mt-0.5">(4.{9 - index})</span>
+                                    <span className="text-[10px] font-bold text-gray-300 font-sans tracking-tight mt-0.5">({book.reviews_count || book.total_reviews || 0})</span>
                                 </div>
 
                                 {/* Title & Author */}
@@ -126,7 +146,7 @@ export default function BookGrid() {
                                     {book.title}
                                 </h3>
                                 <p className="text-[12px] font-semibold text-gray-400 mb-4 line-clamp-1">
-                                    by <span className="text-gray-500">{book.author_name || book.author || "Global Author"}</span>
+                                    by <span className="text-gray-500">{book.author_name || book.author || "Mind Gym Author"}</span>
                                 </p>
 
                                 {/* Price and Action link */}

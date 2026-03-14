@@ -1,7 +1,7 @@
 import BookDetailClient from "./BookDetailClient";
 
 export async function generateMetadata({ params }) {
-    const { id } = params;
+    const { id } = await params;
 
     try {
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/book/${id}`, {
@@ -32,7 +32,7 @@ export async function generateMetadata({ params }) {
 }
 
 export default async function BookDetailPage({ params }) {
-    const { id } = params;
+    const { id } = await params;
     let initialBook = null;
 
     try {

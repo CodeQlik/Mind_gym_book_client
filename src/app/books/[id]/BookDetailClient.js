@@ -42,6 +42,12 @@ export default function BookDetailClient({ initialBook }) {
     const [isFlipping, setIsFlipping] = useState(false);
     const [flipDirection, setFlipDirection] = useState('next');
     const [nextIndex, setNextIndex] = useState(0);
+    const [reviews, setReviews] = useState([]);
+    const [isReviewOpen, setIsReviewOpen] = useState(false);
+    const [reviewRating, setReviewRating] = useState(0);
+    const [hoverRating, setHoverRating] = useState(0);
+    const [reviewText, setReviewText] = useState("");
+    const [reviewName, setReviewName] = useState("");
     const dispatch = useDispatch();
 
     useEffect(() => {
@@ -49,7 +55,17 @@ export default function BookDetailClient({ initialBook }) {
             try {
                 const res = await api.get('/book/all?limit=5');
                 if (res.data?.success) {
-                    setRelatedBooks(res.data.data?.books?.slice(0, 5) || []);
+                    const data = res.data.data || {};
+                    let allBooks = [];
+                    const booksSource = data.books || data;
+                    
+                    if (Array.isArray(booksSource)) {
+                        allBooks = booksSource;
+                    } else if (booksSource && typeof booksSource === 'object') {
+                        allBooks = Object.values(booksSource).flat().filter(book => book !== null && typeof book === 'object');
+                    }
+                    
+                    setRelatedBooks(allBooks.slice(0, 5));
                 }
             } catch (err) {
                 console.error("Error fetching related books", err);
@@ -57,6 +73,22 @@ export default function BookDetailClient({ initialBook }) {
         };
         fetchRelated();
     }, []);
+
+    useEffect(() => {
+        if (params.id) {
+            const fetchReviews = async () => {
+                try {
+                    const res = await api.get(`/review/book/${params.id}`);
+                    if (res.data?.success) {
+                        setReviews(res.data.data || []);
+                    }
+                } catch (err) {
+                    console.error("Error fetching reviews", err);
+                }
+            };
+            fetchReviews();
+        }
+    }, [params.id]);
 
     useEffect(() => {
         if (!initialBook && params.id) {
@@ -482,7 +514,7 @@ export default function BookDetailClient({ initialBook }) {
                             <h2 className="text-3xl font-black text-[#1A1A1A] mb-2">Reader Reviews</h2>
                             <p className="text-[#666666] text-sm font-medium">Verified purchases from our community</p>
                         </div>
-                        <button className="bg-white border text-sm border-gray-200 hover:border-black text-[#1A1A1A] px-6 py-3 rounded-full font-bold transition-all flex items-center gap-2">
+                        <button onClick={() => setIsReviewOpen(true)} className="bg-white border text-sm border-gray-200 hover:border-black text-[#1A1A1A] px-6 py-3 rounded-full font-bold transition-all flex items-center gap-2">
                             Write a Review
                         </button>
                     </div>
@@ -495,43 +527,43 @@ export default function BookDetailClient({ initialBook }) {
                         .marquee-container {
                             display: flex;
                             width: max-content;
-                            animation: slide-marquee 15s linear infinite;
+                            animation: slide-marquee 20s linear infinite;
                         }
                         .marquee-container:hover {
                             animation-play-state: paused;
                         }
                     `}} />
 
-                    <div className="relative overflow-hidden w-full before:absolute before:left-0 before:top-0 before:h-full before:w-16 before:bg-gradient-to-r before:from-[#FAFAFA] before:to-transparent before:z-10 after:absolute after:right-0 after:top-0 after:h-full after:w-16 after:bg-gradient-to-l after:from-[#FAFAFA] after:to-transparent after:z-10 py-4">
-                        <div className="marquee-container gap-6">
-                        {/* We duplicate the array to create a seamless infinite scroll effect */}
-                        {[...[
-                            { name: "Sarah Jenkins", text: "I couldn't put this book down. The way Evelyn describes the setting makes you feel like you're standing right there in the rain. Absolutely stunning debut!", stars: 5 },
-                            { name: "Michael Ross", text: "Read every of its 348 pages in a single sitting! Every chapter is worth every page. The emotional depth is unlike anything I've read this year.", stars: 4 },
-                            { name: "Elena Rodriguez", text: "The author has a gift for the written word. I ended up reading it together in a book club. Truly a masterpiece of modern fiction.", stars: 5 },
-                            { name: "Kevin Chen", text: "The narrative pace is slow, but the writing is just so beautiful. A thoughtful meditation on what we leave behind.", stars: 4 }
-                        ], ...[
-                            { name: "Sarah Jenkins", text: "I couldn't put this book down. The way Evelyn describes the setting makes you feel like you're standing right there in the rain. Absolutely stunning debut!", stars: 5 },
-                            { name: "Michael Ross", text: "Read every of its 348 pages in a single sitting! Every chapter is worth every page. The emotional depth is unlike anything I've read this year.", stars: 4 },
-                            { name: "Elena Rodriguez", text: "The author has a gift for the written word. I ended up reading it together in a book club. Truly a masterpiece of modern fiction.", stars: 5 },
-                            { name: "Kevin Chen", text: "The narrative pace is slow, but the writing is just so beautiful. A thoughtful meditation on what we leave behind.", stars: 4 }
-                        ]].map((review, idx) => (
-                            <div key={idx} className="bg-white p-8 rounded-3xl border border-gray-100 shrink-0 w-[300px] md:w-[400px] whitespace-normal flex flex-col justify-between">
-                                <div>
-                                    <div className="flex items-center justify-between mb-4">
-                                        <h4 className="text-[16px] font-black text-[#1A1A1A]">{review.name}</h4>
-                                        <div className="flex gap-1 shrink-0">
-                                            {[...Array(5)].map((_, i) => (
-                                                <Star key={i} size={14} className={i < review.stars ? "fill-[#FFC107] text-[#FFC107]" : "text-gray-200 fill-gray-100"} />
-                                            ))}
+                    {reviews && reviews.length > 0 ? (
+                        <div className="relative overflow-hidden w-full before:absolute before:left-0 before:top-0 before:h-full before:w-16 before:bg-gradient-to-r before:from-[#FAFAFA] before:to-transparent before:z-10 after:absolute after:right-0 after:top-0 after:h-full after:w-16 after:bg-gradient-to-l after:from-[#FAFAFA] after:to-transparent after:z-10 py-4">
+                            <div className={`gap-6 ${reviews.length > 3 ? "marquee-container" : "flex w-full"}`}>
+                            {/* We duplicate the array to create a seamless infinite scroll effect ONLY if more than 3 reviews */}
+                            {(reviews.length > 3 ? [...reviews, ...reviews, ...reviews, ...reviews, ...reviews, ...reviews] : reviews).map((review, idx) => (
+                                <div key={idx} className="bg-white p-8 rounded-3xl border border-gray-100 shrink-0 w-[300px] md:w-[400px] whitespace-normal flex flex-col justify-between">
+                                    <div>
+                                        <div className="flex items-center justify-between mb-4">
+                                            <h4 className="text-[16px] font-black text-[#1A1A1A]">{review.user?.name || "Anonymous Reader"}</h4>
+                                            <div className="flex gap-1 shrink-0">
+                                                {[...Array(5)].map((_, i) => (
+                                                    <Star key={i} size={14} className={i < review.rating ? "fill-[#FFC107] text-[#FFC107]" : "text-gray-200 fill-gray-100"} />
+                                                ))}
+                                            </div>
                                         </div>
+                                        <p className="text-[#666666] text-[14px] leading-relaxed font-medium line-clamp-4">"{review.comment}"</p>
                                     </div>
-                                    <p className="text-[#666666] text-[14px] leading-relaxed font-medium line-clamp-4">"{review.text}"</p>
                                 </div>
+                            ))}
                             </div>
-                        ))}
                         </div>
-                    </div>
+                    ) : (
+                        <div className="text-center py-16 bg-gray-50 rounded-3xl border border-gray-100">
+                            <h3 className="text-xl font-black text-[#1A1A1A] mb-2">No Reviews Yet</h3>
+                            <p className="text-[#666666] font-medium mb-6">Be the first to share your thoughts about this book!</p>
+                            <button onClick={() => setIsReviewOpen(true)} className="bg-white border text-sm border-gray-200 hover:border-black text-[#1A1A1A] px-6 py-3 rounded-full font-bold transition-all inline-flex items-center gap-2">
+                                Write the First Review
+                            </button>
+                        </div>
+                    )}
 
                 </div>
 
@@ -597,6 +629,118 @@ export default function BookDetailClient({ initialBook }) {
                 </div>
 
             </main>
+
+            {/* Review Modal */}
+            {isReviewOpen && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                    {/* Dark Overlay */}
+                    <div 
+                        className="absolute inset-0 bg-black/70 backdrop-blur-sm transition-opacity"
+                        onClick={() => setIsReviewOpen(false)}
+                    ></div>
+                    
+                    {/* Modal Content */}
+                    <div className="relative bg-white rounded-3xl w-full max-w-lg p-8 shadow-2xl z-10 animate-in fade-in zoom-in duration-300">
+                        <button 
+                            onClick={() => setIsReviewOpen(false)}
+                            className="absolute top-6 right-6 text-gray-400 hover:text-black transition-colors"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                        </button>
+
+                        <h3 className="text-2xl font-black text-[#1A1A1A] mb-2">Write a Review</h3>
+                        <p className="text-[#666666] text-sm mb-6">Share your thoughts about this book with the community.</p>
+
+                        <form onSubmit={async (e) => {
+                            e.preventDefault();
+                            if (reviewRating === 0) {
+                                toast.error("Please select a rating.");
+                                return;
+                            }
+                            try {
+                                const res = await api.post("/review/add", {
+                                    bookId: book.id,
+                                    rating: reviewRating,
+                                    comment: reviewText
+                                });
+                                if (res.data?.success) {
+                                    toast.success("Review submitted successfully!");
+                                    // Optionally fetch reviews again or just push to local
+                                    const newReview = res.data.data;
+                                    setReviews([newReview, ...reviews]);
+                                    setIsReviewOpen(false);
+                                    setReviewText("");
+                                    setReviewName("");
+                                    setReviewRating(0);
+                                } else {
+                                    toast.error(res.data?.message || "Failed to submit review");
+                                }
+                            } catch (err) {
+                                console.error("Error submitting review:", err);
+                                const errMessage = err.response?.data?.message?.toLowerCase();
+                                if (err.response?.status === 401 || (errMessage && errMessage.includes("jwt expired"))) {
+                                    toast.error("Your session has expired. Please login again to write a review.");
+                                    setIsReviewOpen(false);
+                                    router.push("/login?redirect=/books/" + book.id);
+                                } else {
+                                    toast.error(err.response?.data?.message || "Please login to submit a review");
+                                }
+                            }
+                        }}>
+                            <div className="mb-6">
+                                <label className="block text-sm font-bold text-[#1A1A1A] mb-2">Rating</label>
+                                <div className="flex gap-1" onMouseLeave={() => setHoverRating(0)}>
+                                    {[1, 2, 3, 4, 5].map((star) => (
+                                        <button
+                                            type="button"
+                                            key={star}
+                                            className="focus:outline-none transition-transform hover:scale-110 active:scale-95"
+                                            onMouseEnter={() => setHoverRating(star)}
+                                            onClick={() => setReviewRating(star)}
+                                        >
+                                            <Star 
+                                                size={32} 
+                                                className={(hoverRating || reviewRating) >= star ? "fill-[#FFC107] text-[#FFC107]" : "text-gray-200 fill-gray-100 transition-colors"} 
+                                            />
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Note: The backend uses the logged-in user's name, so this field is just for display or we can remove it. Keeping it disabled if logged in or we can pass it if the backend supports it. For now, it's just visually here. */}
+                            <div className="mb-6 hidden">
+                                <label className="block text-sm font-bold text-[#1A1A1A] mb-2">Name</label>
+                                <input 
+                                    type="text" 
+                                    value={reviewName}
+                                    onChange={(e) => setReviewName(e.target.value)}
+                                    placeholder="Your Name (Optional)"
+                                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:border-black focus:ring-1 focus:ring-black transition-all duration-200"
+                                />
+                            </div>
+
+                            <div className="mb-8">
+                                <label className="block text-sm font-bold text-[#1A1A1A] mb-2">Your Review</label>
+                                <textarea 
+                                    required
+                                    rows="4"
+                                    value={reviewText}
+                                    onChange={(e) => setReviewText(e.target.value)}
+                                    placeholder="What did you think about the book?"
+                                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:border-black focus:ring-1 focus:ring-black transition-all duration-200 resize-none"
+                                ></textarea>
+                            </div>
+
+                            <button 
+                                type="submit" 
+                                className="w-full bg-[#FFC107] text-[#1A1A1A] px-6 py-4 rounded-xl font-bold text-[15px] hover:bg-black hover:text-white transition-all shadow-[0_4px_14px_0_rgba(255,193,7,0.39)] transform hover:-translate-y-0.5 active:scale-95"
+                            >
+                                Submit Review
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

@@ -1,11 +1,14 @@
 "use client";
 import React, { useEffect, useState, useRef } from "react";
+import { useDispatch } from "react-redux";
+import { syncAddToCart } from "@/redux/slices/cartSlice";
 import api from "@/lib/axios";
 import Image from "next/image";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, Star, ShoppingCart, Heart } from "lucide-react";
 
 const FeaturedSlider = () => {
+    const dispatch = useDispatch();
     const [books, setBooks] = useState([]);
     const [loading, setLoading] = useState(true);
     const scrollRef = useRef(null);
@@ -15,7 +18,17 @@ const FeaturedSlider = () => {
             try {
                 const response = await api.get("/book/all?limit=10");
                 if (response.data.success) {
-                    setBooks(response.data.data.books || []);
+                    const data = response.data.data || {};
+                    let allBooks = [];
+                    const booksSource = data.books || data;
+                    
+                    if (Array.isArray(booksSource)) {
+                        allBooks = booksSource;
+                    } else if (booksSource && typeof booksSource === 'object') {
+                        allBooks = Object.values(booksSource).flat().filter(book => book !== null && typeof book === 'object');
+                    }
+                    
+                    setBooks(allBooks);
                 }
             } catch (error) {
                 console.error("Error fetching featured books:", error);
@@ -118,7 +131,16 @@ const FeaturedSlider = () => {
                                     {/* Glassmorphic Quick Actions */}
                                     <div className="absolute inset-0 bg-black/20 backdrop-blur-[2px] opacity-0 group-hover/card:opacity-100 transition-all duration-500 flex flex-col items-center justify-center gap-4">
                                         <div className="flex gap-2 translate-y-10 group-hover/card:translate-y-0 transition-transform duration-500 delay-75">
-                                            <button className="w-10 h-10 rounded-full bg-white text-secondary hover:bg-primary hover:text-white transition-all shadow-xl flex items-center justify-center">
+                                            <button 
+                                                onClick={() => dispatch(syncAddToCart({
+                                                    id: book.id,
+                                                    title: book.title,
+                                                    price: parseFloat(book.price),
+                                                    coverImage: book.thumbnail?.url || book.image || "/placeholder-book.jpg",
+                                                    author: book.author_name || book.author || "Global Author"
+                                                }))}
+                                                className="w-10 h-10 rounded-full bg-white text-secondary hover:bg-primary hover:text-white transition-all shadow-xl flex items-center justify-center"
+                                            >
                                                 <ShoppingCart size={18} />
                                             </button>
                                             <button
@@ -147,12 +169,15 @@ const FeaturedSlider = () => {
                             <div className="mt-8 px-1 text-left">
                                 <div className="flex items-center justify-between mb-1.5">
                                     <p className="font-bold text-gray-400 text-[9px] uppercase tracking-[0.2em]">
-                                        {book.author_name || book.author || "Global Author"}
+                                        {book.author_name || book.author || "Mind Gym Author"}
                                     </p>
                                     <div className="flex items-center gap-0.5">
-                                        {[...Array(5)].map((_, i) => (
-                                            <Star key={i} size={8} fill={i < 4 ? "#F7941E" : "none"} stroke="#F7941E" strokeWidth={2} />
-                                        ))}
+                                        {[...Array(5)].map((_, i) => {
+                                            const rating = book.average_rating || book.rating || 5;
+                                            return (
+                                                <Star key={i} size={8} fill={i < Math.floor(rating) ? "#F7941E" : "none"} stroke="#F7941E" strokeWidth={2} />
+                                            );
+                                        })}
                                     </div>
                                 </div>
 

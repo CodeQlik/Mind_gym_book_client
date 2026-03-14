@@ -10,7 +10,8 @@ import {
     Award
 } from "lucide-react";
 import TestimonialSection from "@/component/TestimonialSection";
-import FAQSection from "@/component/FAQSection";
+
+import AboutBookShowcase from "@/component/AboutBookShowcase";
 
 const AboutClient = () => {
     return (
@@ -62,16 +63,6 @@ const AboutClient = () => {
                             <p className="text-base md:text-lg text-[#666666] leading-relaxed max-w-xl font-medium">
                                 Where every spine tells a story and every page holds a dream. We are curators of imagination, providing a sanctuary for the curious mind.
                             </p>
-
-                            <div className="flex flex-col sm:flex-row items-center gap-4 pt-2">
-                                <Link href="/books" className="w-full sm:w-auto px-8 py-4 bg-[#000000] text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-[#F7941E] transition-all transform hover:-translate-y-1 shadow-2xl shadow-black/20 flex items-center justify-center gap-3">
-                                    Explore Collection
-                                    <ArrowRight size={14} />
-                                </Link>
-                                <Link href="/method" className="w-full sm:w-auto px-8 py-4 bg-white border border-black/10 text-[#000000] rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-black/5 transition-all flex items-center justify-center">
-                                    Learn Our Method
-                                </Link>
-                            </div>
                         </div>
 
                         {/* Right Image Side */}
@@ -84,14 +75,6 @@ const AboutClient = () => {
                                     className="object-cover transition-transform duration-1000 hover:scale-105"
                                     priority
                                 />
-                            </div>
-
-                            {/* Stats Floating Card */}
-                            <div className="absolute -bottom-4 -left-4 md:-left-8 bg-white p-4 md:p-6 rounded-[24px] shadow-2xl border border-black/5 z-20 transform hover:-translate-y-2 transition-transform duration-300">
-                                <div className="flex flex-col space-y-0.5">
-                                    <span className="text-2xl md:text-3xl font-black text-[#000000] tracking-tighter">15,000+</span>
-                                    <span className="text-[9px] md:text-[10px] font-black text-[#666666] uppercase tracking-[0.2em]">Curated Titles</span>
-                                </div>
                             </div>
 
                             {/* Top Accent Bloom */}
@@ -209,8 +192,9 @@ const AboutClient = () => {
                     </div>
                 </section>
 
+                <AboutBookShowcase />
                 <TestimonialSection bgColor="bg-gray-100" />
-                <FAQSection />
+
 
                 {/* Final CTA Section */}
                 <section className="py-12 px-6 md:px-12 bg-white">

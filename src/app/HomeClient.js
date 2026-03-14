@@ -10,20 +10,21 @@ import CategorySelection from "@/component/CategorySelection";
 import Features from "@/component/Features";
 import ServiceBar from "@/component/ServiceBar";
 import TrendingBooks from "@/component/TrendingBooks";
-import FAQSection from "@/component/FAQSection";
+
 import BlogSection from "@/component/BlogSection";
 
 export default function HomeClient() {
     return (
         <>
             <Hero />
+            <ServiceBar />
             <BookGrid />
             <TrendingBooks />
             <AuthorSection />
             <Features />
             <BlogSection />
             <TestimonialSection />
-            <FAQSection />
+
         </>
     );
 }

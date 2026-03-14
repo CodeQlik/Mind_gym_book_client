@@ -44,8 +44,17 @@ const CategoryShowcase = () => {
                         // 3. Fetch books for this category
                         const bookRes = await api.get(`/book/category/${randomCat.id}`);
                         if (bookRes.data.success) {
-                            // Take top 6 books
-                            setBooks((bookRes.data.data.books || bookRes.data.data || []).slice(0, 6));
+                            const data = bookRes.data.data || {};
+                            let allBooks = [];
+                            const booksSource = data.books || data;
+                            
+                            if (Array.isArray(booksSource)) {
+                                allBooks = booksSource;
+                            } else if (booksSource && typeof booksSource === 'object') {
+                                allBooks = Object.values(booksSource).flat().filter(book => book !== null && typeof book === 'object');
+                            }
+                            
+                            setBooks(allBooks.slice(0, 6));
                         }
                     }
                 }

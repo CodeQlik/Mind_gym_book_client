@@ -19,8 +19,17 @@ const Features = () => {
             try {
                 const response = await api.get("/book/all");
                 if (response.data.success) {
-                    // Limiting to a reasonable number for the featured grid
-                    setBooks(response.data.data.books || []);
+                    const data = response.data.data || {};
+                    let allBooks = [];
+                    const booksSource = data.books || data;
+                    
+                    if (Array.isArray(booksSource)) {
+                        allBooks = booksSource;
+                    } else if (booksSource && typeof booksSource === 'object') {
+                        allBooks = Object.values(booksSource).flat().filter(book => book !== null && typeof book === 'object');
+                    }
+
+                    setBooks(allBooks.slice(0, 24));
                 }
             } catch (error) {
                 console.error("Error fetching books:", error);
@@ -97,16 +106,19 @@ const Features = () => {
                                 {/* Rating Stars (Randomized for mockup fidelity) */}
                                 <div className="flex items-center gap-1 mb-3">
                                     <div className="flex items-center">
-                                        {[...Array(5)].map((_, i) => (
-                                            <Star
-                                                key={i}
-                                                size={10}
-                                                className={`${i < 4 ? "fill-[#F7941E] text-[#F7941E]" : "fill-gray-200 text-gray-200"}`}
-                                            />
-                                        ))}
+                                        {[...Array(5)].map((_, i) => {
+                                            const rating = book.average_rating || book.rating || 5;
+                                            return (
+                                                <Star
+                                                    key={i}
+                                                    size={10}
+                                                    className={`${i < Math.floor(rating) ? "fill-[#F7941E] text-[#F7941E]" : "fill-gray-200 text-gray-200"}`}
+                                                />
+                                            );
+                                        })}
                                     </div>
                                     <span className="text-[10px] font-bold text-gray-400 mt-0.5">
-                                        (4.{9 - (index % 5)})
+                                        ({book.reviews_count || book.total_reviews || 0})
                                     </span>
                                 </div>
 
@@ -115,7 +127,7 @@ const Features = () => {
                                     {book.title}
                                 </h3>
                                 <p className="text-[11px] font-medium text-gray-400 mb-5">
-                                    by <span className="hover:text-secondary transition-colors cursor-pointer">{book.author_name || "James Patterson"}</span>
+                                    by <span className="hover:text-secondary transition-colors cursor-pointer">{book.author_name || book.author || "Mind Gym Author"}</span>
                                 </p>
 
                                 {/* Bottom Row: Price & Link */}

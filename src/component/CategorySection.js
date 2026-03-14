@@ -66,7 +66,17 @@ const CategorySection = () => {
                 const endpoint = activeCategoryId === "all" ? "/book/all" : `/book/category/${activeCategoryId}`;
                 const response = await api.get(endpoint);
                 if (response.data.success) {
-                    setBooks(response.data.data.books || response.data.data || []);
+                    const data = response.data.data || {};
+                    let allBooks = [];
+                    const booksSource = data.books || data;
+                    
+                    if (Array.isArray(booksSource)) {
+                        allBooks = booksSource;
+                    } else if (booksSource && typeof booksSource === 'object') {
+                        allBooks = Object.values(booksSource).flat().filter(book => book !== null && typeof book === 'object');
+                    }
+                    
+                    setBooks(allBooks);
                 }
             } catch (err) {
                 console.error("Error fetching books:", err);
@@ -188,7 +198,7 @@ const CategorySection = () => {
                                         {/* Book Info Section */}
                                         <div className="flex flex-col gap-1 px-2 pb-2 text-left">
                                             <span className="text-[10px] md:text-[11px] text-gray-400 font-medium uppercase tracking-wider">
-                                                {book.author_name || book.author || "Unknown Author"}
+                                                {book.author_name || book.author || "Mind Gym Author"}
                                             </span>
                                             <h3 className="text-sm md:text-base font-black text-secondary leading-tight line-clamp-1 group-hover:text-primary transition-colors">
                                                 {book.title}

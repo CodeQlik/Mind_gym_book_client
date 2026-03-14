@@ -19,6 +19,16 @@ const nextConfig: NextConfig = {
         hostname: 'randomuser.me',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'ui-avatars.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'mindgymbook.ductfabrication.in',
+        pathname: '/**',
+      },
     ],
   },
   async rewrites() {

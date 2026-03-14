@@ -1,14 +1,25 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { Search, Filter, Star, ShoppingCart, Heart, BookOpen, TrendingUp, Award, Loader2 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import api from "@/lib/axios";
 import { toast } from "react-toastify";
-import { useDispatch } from "react-redux";
 import { syncAddToCart, fetchCart } from "@/redux/slices/cartSlice";
+import { toggleWishlistSync } from "@/redux/slices/wishlistSlice";
+import { useSelector, useDispatch } from "react-redux";
 
 export default function BooksClient() {
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <BooksContent />
+        </Suspense>
+    );
+}
+
+function BooksContent() {
+    const searchParams = useSearchParams();
     const [books, setBooks] = useState([]);
     const [categories, setCategories] = useState([]);
     const [selectedCategory, setSelectedCategory] = useState("all");
@@ -17,8 +28,17 @@ export default function BooksClient() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [currentPage, setCurrentPage] = useState(1);
-    const booksPerPage = 20;
+    const booksPerPage = 12; // Shows 2 rows of 4 or 4 rows of 2 depending on screen size
     const dispatch = useDispatch();
+    const { items: wishlistItems } = useSelector(state => state.wishlist);
+    const [priceRange, setPriceRange] = useState(500);
+    const [selectedRatings, setSelectedRatings] = useState([]);
+
+    const toggleRating = (rating) => {
+        setSelectedRatings(prev =>
+            prev.includes(rating) ? prev.filter(r => r !== rating) : [...prev, rating]
+        );
+    };
 
     // Fetch books and categories on mount
     useEffect(() => {
@@ -26,19 +46,36 @@ export default function BooksClient() {
         dispatch(fetchCart());
     }, [dispatch]);
 
+    useEffect(() => {
+        const query = searchParams.get("query");
+        if (query) {
+            setSearchQuery(query);
+        }
+    }, [searchParams]);
+
     const fetchData = async () => {
         try {
             setLoading(true);
             const [booksResponse, categoriesResponse] = await Promise.all([
-                api.get("/book/all"),
+                api.get("/book/all?limit=100"),
                 api.get("/category/all")
             ]);
 
-            const booksResult = booksResponse.data?.data || {};
+            const data = booksResponse.data?.data || {};
             const categoriesData = categoriesResponse.data?.data || [];
-            const booksArray = booksResult.books || [];
+            
+            let booksArray = [];
+            // Target data.books specifically
+            const booksSource = data.books || data;
+            
+            if (Array.isArray(booksSource)) {
+                booksArray = booksSource;
+            } else if (booksSource && typeof booksSource === 'object') {
+                // If it's an object (categorized by English, Hindi, etc.), flatten its values
+                booksArray = Object.values(booksSource).flat().filter(book => book !== null && typeof book === 'object');
+            }
 
-            setBooks(Array.isArray(booksArray) ? booksArray : []);
+            setBooks(booksArray);
             setCategories([
                 { id: "all", name: "All Books", slug: "all" },
                 ...(Array.isArray(categoriesData) ? categoriesData : [])
@@ -54,14 +91,23 @@ export default function BooksClient() {
 
     const filteredBooks = books
         .filter(book => {
-            const matchesCategory = selectedCategory === "all" || book.category_id === parseInt(selectedCategory);
+            const bookCategoryId = (book.category?.id || book.category_id)?.toString();
+            const matchesCategory = selectedCategory === "all" || bookCategoryId === selectedCategory.toString();
             const searchLower = searchQuery.toLowerCase();
             const matchesSearch =
                 book.title?.toLowerCase().includes(searchLower) ||
                 book.author?.toLowerCase().includes(searchLower) ||
                 book.description?.toLowerCase().includes(searchLower);
 
-            return matchesCategory && matchesSearch && book.is_active;
+            const bookPrice = parseFloat(book.price) || 0;
+            const matchesPrice = bookPrice <= priceRange;
+
+            // Use the book's rating if available, otherwise default to a reasonable value
+            const bookRating = book.average_rating || book.rating || 4;
+            const matchesRating = selectedRatings.length === 0 || selectedRatings.some(r => bookRating >= r);
+
+            // Disable is_active check as it's missing from API
+            return matchesCategory && matchesSearch && matchesPrice && matchesRating;
         })
         .sort((a, b) => {
             if (sortBy === "price-low") return parseFloat(a.price) - parseFloat(b.price);
@@ -91,22 +137,10 @@ export default function BooksClient() {
     };
 
     const handleToggleWishlist = async (bookId) => {
-        try {
-            await api.post("/book/bookmark/toggle", { book_id: bookId });
-            setBooks(prevBooks =>
-                prevBooks.map(book =>
-                    book.id === bookId ? { ...book, isBookmarked: !book.isBookmarked } : book
-                )
-            );
-            toast.success("Wishlist updated!");
-        } catch (err) {
-            console.error("Error toggling wishlist:", err);
-            toast.error(err.response?.data?.message || "Please login to add to wishlist");
-        }
+        dispatch(toggleWishlistSync(bookId));
     };
 
-    const [priceRange, setPriceRange] = useState(100);
-    const [selectedRatings, setSelectedRatings] = useState([]);
+
 
     return (
         <div className="bg-[#F7F6F3] min-h-screen font-['Outfit',sans-serif]">
@@ -193,17 +227,24 @@ export default function BooksClient() {
 
                     <div className="space-y-4">
                         <div className="text-[13px] font-bold tracking-[0.2em] uppercase text-[#999690] mb-4">Price Range</div>
-                        <span className="text-xs">₹0</span><span className="text-xs">₹500+</span>
+                        <div className="flex justify-between items-center mb-1">
+                            <span className="text-xs font-bold text-[#999690]">₹0</span>
+                            <span className="text-xs font-bold text-[#999690]">₹500+</span>
+                        </div>
                         <input
                             type="range"
                             min="0"
                             max="500"
+                            step="50"
                             value={priceRange}
-                            onChange={(e) => setPriceRange(e.target.value)}
+                            onChange={(e) => setPriceRange(parseInt(e.target.value))}
                             className="gold-range w-full h-[3px] rounded-full outline-none cursor-pointer"
                             style={{ background: `linear-gradient(90deg, #E8B84B ${(priceRange / 500) * 100}%, #EBEBEB ${(priceRange / 500) * 100}%)` }}
                         />
-                        <div className="text-[15px] font-semibold text-[#0C0C0C] mt-2">Up to ₹{priceRange}</div>
+                        <div className="flex items-center justify-between mt-2">
+                            <div className="text-[15px] font-bold text-[#0C0C0C]">Up to ₹{priceRange}</div>
+                            <div className="w-2 h-2 rounded-full bg-[#E8B84B] animate-pulse"></div>
+                        </div>
                     </div>
 
                     <div className="gold-gradient-divider"></div>
@@ -211,16 +252,32 @@ export default function BooksClient() {
                     <div className="space-y-4">
                         <div className="text-[13px] font-bold tracking-[0.2em] uppercase text-[#999690] mb-4">Customer Rating</div>
                         <div className="flex flex-col gap-2">
-                            {[4, 3, 2, 1].map((rating) => (
-                                <div key={rating} className="flex items-center gap-2 p-2 rounded-lg hover:bg-[#F7F6F3] cursor-pointer group transition-colors">
-                                    <div className="flex gap-1">
-                                        {[...Array(5)].map((_, i) => (
-                                            <span key={i} className={`text-xs ${i < rating ? "text-[#E8B84B]" : "text-[#DDD]"}`}>★</span>
-                                        ))}
+                            {[4, 3, 2, 1].map((rating) => {
+                                const isSelected = selectedRatings.includes(rating);
+                                return (
+                                    <div
+                                        key={rating}
+                                        onClick={() => toggleRating(rating)}
+                                        className={`flex items-center justify-between p-2.5 rounded-xl cursor-pointer transition-all duration-300 group ${isSelected ? "bg-[#0C0C0C] text-white" : "bg-transparent text-[#999690] hover:bg-[#F7F6F3] hover:text-[#0C0C0C]"}`}
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className="flex gap-0.5">
+                                                {[...Array(5)].map((_, i) => (
+                                                    <span key={i} className={`text-xs ${i < rating ? "text-[#E8B84B]" : "text-[#DDD] group-hover:text-[#CCC]"}`}>★</span>
+                                                ))}
+                                            </div>
+                                            <span className={`text-sm font-medium ${isSelected ? "text-white/90" : "text-[#999690]"}`}>{rating} & up</span>
+                                        </div>
+                                        {isSelected && (
+                                            <div className="w-4 h-4 rounded-full bg-[#E8B84B] flex items-center justify-center">
+                                                <svg className="w-2.5 h-2.5 text-[#0C0C0C]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4">
+                                                    <polyline points="20 6 9 17 4 12" />
+                                                </svg>
+                                            </div>
+                                        )}
                                     </div>
-                                    <span className="text-sm text-[#999690]">& up</span>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     </div>
 
@@ -228,17 +285,23 @@ export default function BooksClient() {
 
                     <div className="space-y-4">
                         <div className="text-[13px] font-bold tracking-[0.2em] uppercase text-[#999690] mb-4">Sort By</div>
-                        <select
-                            value={sortBy}
-                            onChange={(e) => setSortBy(e.target.value)}
-                            className="w-full p-2.5 rounded-xl border-1.5 border-[#EBEBEB] bg-white text-[15px] font-medium text-[#0C0C0C] outline-none appearance-none cursor-pointer focus:border-[#E8B84B] transition-all"
-                            style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 14px center' }}
-                        >
-                            <option value="popular">Most Popular</option>
-                            <option value="newest">Newest First</option>
-                            <option value="price-low">Price: Low to High</option>
-                            <option value="price-high">Price: High to Low</option>
-                        </select>
+                        <div className="relative group">
+                            <select
+                                value={sortBy}
+                                onChange={(e) => setSortBy(e.target.value)}
+                                className="w-full pl-4 pr-10 py-3 rounded-xl border-1.5 border-[#EBEBEB] bg-white text-[14px] font-bold text-[#0C0C0C] outline-none appearance-none cursor-pointer focus:border-[#E8B84B] focus:ring-4 focus:ring-[#E8B84B]/5 transition-all"
+                            >
+                                <option value="popular">Most Popular</option>
+                                <option value="newest">Newest First</option>
+                                <option value="price-low">Price: Low to High</option>
+                                <option value="price-high">Price: High to Low</option>
+                            </select>
+                            <div className="absolute right-4 top-1/2 -translate-y-1/2 p-1 bg-[#F7F6F3] rounded-md pointer-events-none group-hover:bg-[#E8B84B]/10 transition-colors">
+                                <svg className="w-3.5 h-3.5 text-[#999690] group-hover:text-[#E8B84B] transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                                    <path d="M6 9l6 6 6-6" />
+                                </svg>
+                            </div>
+                        </div>
                     </div>
                 </aside>
 
@@ -265,17 +328,21 @@ export default function BooksClient() {
                         <div className="flex items-center gap-4">
                             {!loading && (
                                 <div className="text-[12px] font-medium text-[#999690] bg-white border-1.5 border-[#EBEBEB] px-4 py-2.5 rounded-xl whitespace-nowrap">
-                                    Showing <b className="text-[#0C0C0C]">{startIndex + 1}–{Math.min(endIndex, totalBooks)}</b> of <b className="text-[#0C0C0C]">{totalBooks}</b> titles
+                                    {totalBooks > 0 ? (
+                                        <>Showing <b className="text-[#0C0C0C]">{startIndex + 1}–{Math.min(endIndex, totalBooks)}</b> of <b className="text-[#0C0C0C]">{totalBooks}</b> titles</>
+                                    ) : (
+                                        <span className="text-red-500 font-bold uppercase tracking-wider">No results found</span>
+                                    )}
                                 </div>
                             )}
                             <button
                                 onClick={() => {
                                     setSelectedCategory("all");
                                     setSearchQuery("");
-                                    setPriceRange(100);
+                                    setPriceRange(500);
                                     setSelectedRatings([]);
                                 }}
-                                className="text-[11.5px] font-medium text-[#999690] hover:text-[#E8B84B] tracking-wide transition-colors"
+                                className="text-[11.5px] font-bold text-[#999690] hover:text-[#E8B84B] tracking-widest uppercase transition-colors"
                             >
                                 Clear All
                             </button>
@@ -289,83 +356,139 @@ export default function BooksClient() {
                         </div>
                     ) : (
                         <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mt-8">
-                            {paginatedBooks.map((book) => {
-                                const thumbnailUrl = book.thumbnail?.url || book.thumbnail || "/placeholder-book.jpg";
-                                return (
-                                    <div key={book.id} className="book-card bg-white rounded-[14px] border border-[#EBEBEB] flex flex-col overflow-hidden transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_15px_35px_rgba(0,0,0,0.08)] hover:border-[#E8B84B]/40 group">
-                                        <div className="relative aspect-[4/5] bg-[#F5F5F5] overflow-hidden group/img">
-                                            {/* Wraps only image in link */}
-                                            <Link href={`/books/${book.id}`} className="block w-full h-full">
-                                                <Image
-                                                    src={thumbnailUrl}
-                                                    alt={book.title}
-                                                    fill
-                                                    className="object-cover transition-transform duration-500 group-hover:scale-105"
-                                                />
-                                            </Link>
-                                            
-                                            <button
-                                              onClick={() => handleToggleWishlist(book.id)}
-                                              className="absolute top-2.5 right-2.5 w-7 h-7 rounded-full bg-white/95 backdrop-blur-sm flex items-center justify-center transition-all duration-200 opacity-0 group-hover:opacity-100 hover:bg-[#E8B84B] hover:scale-110 z-20 shadow-sm"
-                                            >
-                                                <Heart size={12} className={`${book.isBookmarked ? "fill-red-500 text-red-500" : "text-[#666] group-hover:text-red-500"}`} />
-                                            </button>
-                                        </div>
-
-                                        <div className="p-3 flex flex-col gap-1.5 flex-1 relative z-10">
-                                            <div className="min-h-[38px] mb-1">
-                                                <Link href={`/books/${book.id}`}>
-                                                    <h3 className="text-[12px] font-bold text-[#0C0C0C] line-clamp-1 mb-0.5 leading-tight hover:text-[#E8B84B] transition-colors">{book.title}</h3>
+                            {paginatedBooks.length > 0 ? (
+                                paginatedBooks.map((book) => {
+                                    const thumbnailUrl = book.thumbnail?.url || book.thumbnail || "/placeholder-book.jpg";
+                                    return (
+                                        <div key={book.id} className="book-card bg-white rounded-[14px] border border-[#EBEBEB] flex flex-col overflow-hidden transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_15px_35px_rgba(0,0,0,0.08)] hover:border-[#E8B84B]/40 group">
+                                            <div className="relative aspect-[4/5] bg-[#F5F5F5] overflow-hidden group/img">
+                                                <Link href={`/books/${book.id}`} className="block w-full h-full">
+                                                    <Image
+                                                        src={thumbnailUrl}
+                                                        alt={book.title}
+                                                        fill
+                                                        className="object-cover transition-transform duration-500 group-hover:scale-105"
+                                                    />
                                                 </Link>
-                                                <p className="text-[10.5px] text-[#999690] leading-tight">{book.author || "Unknown Author"}</p>
-                                            </div>
 
-                                            <div className="flex items-center gap-1">
-                                                <div className="flex gap-0.5">
-                                                    {[...Array(5)].map((_, i) => (
-                                                        <span key={i} className={`text-[10px] ${i < 4 ? "text-[#E8B84B]" : "text-[#DDD]"}`}>★</span>
-                                                    ))}
-                                                </div>
-                                                <span className="text-[10px] text-[#C0BDB7]">(1.7k)</span>
-                                            </div>
-
-                                            <div className="flex items-center justify-between mt-auto pt-1">
-                                                <div className="text-[20px] font-black text-[#0C0C0C]">
-                                                    <span className="text-[12px] font-medium mr-0.5">₹</span>
-                                                    {(parseFloat(book.price) || 0).toLocaleString()}
-                                                </div>
                                                 <button
-                                                    onClick={() => handleAddToCart(book)}
-                                                    className="px-2.5 py-1.5 rounded-lg bg-[#E8B84B] text-[#0C0C0C] font-bold text-[9.5px] uppercase tracking-wider transition-all duration-200 hover:bg-[#0C0C0C] hover:text-white hover:-translate-y-0.5"
+                                                    onClick={() => handleToggleWishlist(book.id)}
+                                                    className="absolute top-2.5 right-2.5 w-7 h-7 rounded-full bg-white/95 backdrop-blur-sm flex items-center justify-center transition-all duration-200 opacity-0 group-hover:opacity-100 hover:bg-[#E8B84B] hover:scale-110 z-20 shadow-sm"
                                                 >
-                                                    + Cart
+                                                    <Heart size={12} className={`${wishlistItems.some(item => item.id === book.id) ? "fill-red-500 text-red-500" : "text-[#666] group-hover:text-red-500"}`} />
                                                 </button>
                                             </div>
+
+                                            <div className="p-3 flex flex-col gap-1.5 flex-1 relative z-10">
+                                                <div className="min-h-[38px] mb-1">
+                                                    <Link href={`/books/${book.id}`}>
+                                                        <h3 className="text-[12px] font-bold text-[#0C0C0C] line-clamp-1 mb-0.5 leading-tight hover:text-[#E8B84B] transition-colors">{book.title}</h3>
+                                                    </Link>
+                                                    <p className="text-[10.5px] text-[#999690] leading-tight">{book.author_name || book.author || "Mind Gym Author"}</p>
+                                                </div>
+
+                                                <div className="flex items-center gap-1">
+                                                    <div className="flex gap-0.5">
+                                                        {[...Array(5)].map((_, i) => {
+                                                            const rating = book.average_rating || book.rating || 5;
+                                                            return (
+                                                                <span key={i} className={`text-[10px] ${i < Math.floor(rating) ? "text-[#E8B84B]" : "text-[#DDD]"}`}>★</span>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                    <span className="text-[10px] text-[#C0BDB7]">({book.reviews_count || book.total_reviews || 0})</span>
+                                                </div>
+
+                                                <div className="flex items-center justify-between mt-auto pt-1">
+                                                    <div className="text-[20px] font-black text-[#0C0C0C]">
+                                                        <span className="text-[12px] font-medium mr-0.5">₹</span>
+                                                        {(parseFloat(book.price) || 0).toLocaleString()}
+                                                    </div>
+                                                    <button
+                                                        onClick={() => handleAddToCart(book)}
+                                                        className="px-2.5 py-1.5 rounded-lg bg-[#E8B84B] text-[#0C0C0C] font-bold text-[9.5px] uppercase tracking-wider transition-all duration-200 hover:bg-[#0C0C0C] hover:text-white hover:-translate-y-0.5"
+                                                    >
+                                                        + Cart
+                                                    </button>
+                                                </div>
+                                            </div>
                                         </div>
+                                    );
+                                })
+                            ) : (
+                                <div className="col-span-full py-32 flex flex-col items-center justify-center text-center">
+                                    <div className="w-20 h-20 bg-white shadow-xl rounded-[24px] border border-[#EBEBEB] flex items-center justify-center mb-6 relative">
+                                        <div className="absolute inset-0 bg-[#E8B84B]/5 rounded-[24px] animate-ping opacity-20"></div>
+                                        <Search size={32} className="text-[#E8B84B]" />
                                     </div>
-                                );
-                            })}
+                                    <h3 className="text-2xl font-['Cormorant_Garamond',serif] font-bold text-[#0C0C0C] mb-3">No matching treasures found</h3>
+                                    <p className="text-[#999690] max-w-sm mx-auto text-[15px] leading-relaxed">
+                                        We couldn't find any books matching your current filters. Try broadening your search or clearing the filters to explore our full collection.
+                                    </p>
+                                    <button 
+                                        onClick={() => {
+                                            setSelectedCategory("all");
+                                            setSearchQuery("");
+                                            setPriceRange(500);
+                                            setSelectedRatings([]);
+                                        }}
+                                        className="mt-8 px-8 py-3 bg-[#0C0C0C] text-white rounded-xl font-bold text-[14px] hover:bg-[#E8B84B] hover:text-[#0C0C0C] transition-all duration-300"
+                                    >
+                                        Clear All Filters
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     )}
 
                     {!loading && totalPages > 1 && (
-                        <div className="mt-12 flex items-center justify-center gap-2">
-                            {Array.from({ length: totalPages }, (_, i) => (
+                        <div className="mt-16 mb-12 flex flex-col items-center gap-6">
+                            <div className="flex items-center gap-3">
                                 <button
-                                    key={i + 1}
                                     onClick={() => {
-                                        setCurrentPage(i + 1);
-                                        window.scrollTo({ top: 300, behavior: "smooth" });
+                                        setCurrentPage(prev => Math.max(prev - 1, 1));
+                                        window.scrollTo({ top: 400, behavior: "smooth" });
                                     }}
-                                    className={`w-9 h-9 rounded-xl font-bold text-xs transition-all ${currentPage === i + 1 ? "bg-[#E8B84B] text-[#0C0C0C]" : "bg-white border-1.5 border-[#EBEBEB] text-[#999690] hover:border-[#E8B84B]"}`}
+                                    disabled={currentPage === 1}
+                                    className="w-10 h-10 rounded-xl border-1.5 border-[#EBEBEB] bg-white flex items-center justify-center text-[#999690] hover:border-[#E8B84B] hover:text-[#0C0C0C] disabled:opacity-30 disabled:hover:border-[#EBEBEB] transition-all"
                                 >
-                                    {i + 1}
+                                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="15 18 9 12 15 6" /></svg>
                                 </button>
-                            ))}
+
+                                <div className="flex items-center gap-2">
+                                    {Array.from({ length: totalPages }, (_, i) => (
+                                        <button
+                                            key={i + 1}
+                                            onClick={() => {
+                                                setCurrentPage(i + 1);
+                                                window.scrollTo({ top: 400, behavior: "smooth" });
+                                            }}
+                                            className={`w-10 h-10 rounded-xl font-bold text-[13px] transition-all duration-300 ${currentPage === i + 1 ? "bg-[#E8B84B] text-[#0C0C0C] shadow-lg shadow-[#E8B84B]/20 scale-110" : "bg-white border-1.5 border-[#EBEBEB] text-[#999690] hover:border-[#E8B84B] hover:text-[#0C0C0C]"}`}
+                                        >
+                                            {i + 1}
+                                        </button>
+                                    ))}
+                                </div>
+
+                                <button
+                                    onClick={() => {
+                                        setCurrentPage(prev => Math.min(prev + 1, totalPages));
+                                        window.scrollTo({ top: 400, behavior: "smooth" });
+                                    }}
+                                    disabled={currentPage === totalPages}
+                                    className="w-10 h-10 rounded-xl border-1.5 border-[#EBEBEB] bg-white flex items-center justify-center text-[#999690] hover:border-[#E8B84B] hover:text-[#0C0C0C] disabled:opacity-30 disabled:hover:border-[#EBEBEB] transition-all"
+                                >
+                                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6" /></svg>
+                                </button>
+                            </div>
+
+                            <p className="text-[11px] font-bold text-[#999690] uppercase tracking-[0.2em]">
+                                Page {currentPage} of {totalPages}
+                            </p>
                         </div>
                     )}
                 </main>
-            </div >
-        </div >
+            </div>
+        </div>
     );
 }
