@@ -50,6 +50,7 @@ import { syncAddToCart } from "@/redux/slices/cartSlice";
 const ProfilePage = () => {
     const { user, token } = useSelector((state) => state.auth);
     const [activeTab, setActiveTab] = useState("profile");
+    const [view, setView] = useState("menu"); // New state to track 'menu' or 'content' on mobile
     const [showPassword, setShowPassword] = useState({ old: false, new: false, confirm: false });
     const [passwordData, setPasswordData] = useState({ oldPassword: "", newPassword: "", confirmPassword: "" });
     const [isChanging, setIsChanging] = useState(false);
@@ -60,6 +61,8 @@ const ProfilePage = () => {
     const [addresses, setAddresses] = useState([]);
     const [loadingAddresses, setLoadingAddresses] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [totalOrders, setTotalOrders] = useState(0);
     const ordersPerPage = 10;
     const [isEditing, setIsEditing] = useState(false);
     const [formData, setFormData] = useState({
@@ -101,11 +104,13 @@ const ProfilePage = () => {
         const tab = searchParams.get("tab");
         if (tab && navItems.some(item => item.id === tab)) {
             setActiveTab(tab);
+            setView("content"); // Ensure we show the content if a tab is linked/refreshed
         }
     }, [searchParams]);
 
     const handleTabChange = (tabId) => {
         setActiveTab(tabId);
+        setView("content"); // Switch to content view on mobile
         router.push(`/profile?tab=${tabId}`, { scroll: false });
     };
 
@@ -135,7 +140,7 @@ const ProfilePage = () => {
 
     useEffect(() => {
         if (activeTab === "orders" && token) {
-            fetchOrders();
+            fetchOrders(currentPage);
         }
         if (activeTab === "wishlist" && token) {
             fetchWishlist();
@@ -146,8 +151,7 @@ const ProfilePage = () => {
         if (activeTab === "support" && token) {
             fetchSupportTickets();
         }
-        setCurrentPage(1);
-    }, [activeTab, token]);
+    }, [activeTab, token, currentPage]);
 
     // Live Polling for Selected Ticket
     useEffect(() => {
@@ -178,12 +182,14 @@ const ProfilePage = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [polledTicket?.messages?.length, selectedTicketId]);
 
-    const fetchOrders = async () => {
+    const fetchOrders = async (page = 1) => {
         try {
             setLoadingOrders(true);
-            const res = await api.get("/orders/my-orders");
+            const res = await api.get(`/orders/my-orders?page=${page}&limit=${ordersPerPage}`);
             if (res.data?.success) {
                 setOrders(res.data.data.orders || []);
+                setTotalPages(res.data.data.totalPages || 1);
+                setTotalOrders(res.data.data.totalItems || 0);
             }
         } catch (error) {
             console.error("Failed to fetch orders:", error);
@@ -255,9 +261,25 @@ const ProfilePage = () => {
             setIsProcessingAction(true);
             const res = await api.post(`/orders/cancel/${cancelOrderId}`);
             if (res.data?.success) {
-                toast.success("Order cancelled successfully");
+                const updatedOrder = res.data.data;
                 setIsCancelModalOpen(false);
                 setCancelOrderId(null);
+                
+                // Update local state immediately for "instant" feel
+                setOrders(prevOrders => prevOrders.map(o => o.id === updatedOrder.id ? updatedOrder : o));
+                
+                // If it was a prepaid order, inform user that refund is initiated
+                const isPrepaid = String(updatedOrder.payment_method || '').toLowerCase() !== 'cod' || updatedOrder.payment_status === 'paid';
+                
+                if (isPrepaid) {
+                    toast.success("Order cancelled. Refund has been automatically initiated.");
+                    // Still open the modal so they can provide a specific reason if they wish
+                    setRefundOrderId(updatedOrder.id);
+                    setIsRefundModalOpen(true);
+                } else {
+                    toast.success("Order cancelled successfully");
+                }
+                
                 fetchOrders();
             }
         } catch (error) {
@@ -283,7 +305,15 @@ const ProfilePage = () => {
             }
         } catch (error) {
             console.error("Refund request failed:", error);
-            toast.error(error.response?.data?.message || "Failed to submit refund request");
+            const errorMsg = error.response?.data?.message || "";
+            if (errorMsg.toLowerCase().includes("already requested")) {
+                toast.success("Refund request is already registered.");
+                setIsRefundModalOpen(false);
+                setRefundReason("");
+                fetchOrders();
+            } else {
+                toast.error(errorMsg || "Failed to submit refund request");
+            }
         } finally {
             setIsProcessingAction(false);
         }
@@ -350,7 +380,7 @@ const ProfilePage = () => {
 
     const handleLogout = () => {
         dispatch(logoutUser());
-        router.push("/login");
+        router.push("/");
     };
 
     const handleAddressSubmit = async (e) => {
@@ -540,7 +570,7 @@ const ProfilePage = () => {
         <div className="min-h-screen bg-white flex flex-col lg:flex-row font-sans text-[#1A1A1A]">
 
             {/* Sidebar Navigation */}
-            <div className="lg:w-[300px] flex-shrink-0 bg-white lg:rounded-r-[20px] shadow-[10px_0_30px_rgb(0,0,0,0.03)] flex flex-col pt-8 z-20 sticky top-0 h-[100dvh] overflow-y-auto no-scrollbar">
+            <div className={`${view === "menu" ? "flex" : "hidden"} lg:flex lg:w-[300px] flex-shrink-0 bg-white lg:rounded-r-[20px] shadow-[10px_0_30px_rgb(0,0,0,0.03)] flex flex-col pt-8 z-20 sticky top-0 h-[100dvh] overflow-y-auto no-scrollbar`}>
                 {/* Logo */}
                 <div className="flex items-center justify-center gap-2 mb-10">
                     <Activity size={20} className="text-[#FFC107]" />
@@ -611,7 +641,17 @@ const ProfilePage = () => {
             </div>
 
             {/* Right Content Area */}
-            <main className="flex-1 w-full px-12 lg:px-28 pt-20 pb-20 relative z-10 overflow-x-hidden">
+            <main className={`${view === "content" ? "block" : "hidden"} lg:block flex-1 w-full px-6 md:px-12 lg:px-28 pt-24 lg:pt-20 pb-20 relative z-10 overflow-x-hidden`}>
+                
+                {/* Mobile Back Button */}
+                <div className="lg:hidden mb-8">
+                    <button 
+                        onClick={() => setView("menu")}
+                        className="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-gray-400 bg-gray-50 px-4 py-2 rounded-xl"
+                    >
+                        <ChevronRight className="rotate-180" size={14} /> Back to Dashboard
+                    </button>
+                </div>
 
 
 
@@ -966,16 +1006,16 @@ const ProfilePage = () => {
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-[9px] font-black text-gray-300 uppercase tracking-widest pl-1">Registry Type (e.g. Home, Work)</label>
+                                        <label className="text-[9px] font-black text-gray-300 uppercase tracking-widest pl-1">Registry Type (e.g. Home, Work, Other)</label>
                                         <select
                                             value={addressFormData.addresstype}
                                             onChange={(e) => setAddressFormData({ ...addressFormData, addresstype: e.target.value })}
                                             className="w-full bg-gray-50 border border-gray-100 rounded-xl px-5 py-3.5 font-bold text-[#1A1A1A] text-sm focus:outline-none focus:border-[#FFC107] focus:ring-4 focus:ring-[#FFC107]/5 transition-all appearance-none"
                                             required
                                         >
-                                            <option value="home">Home Sanctuary</option>
-                                            <option value="work">Professional Axis</option>
-                                            <option value="other">Other Terminal</option>
+                                            <option value="home">Home</option>
+                                            <option value="work">Work</option>
+                                            <option value="other">Other</option>
                                         </select>
                                     </div>
                                     <div className="md:col-span-2 flex items-center gap-3 pt-2">
@@ -1226,7 +1266,7 @@ const ProfilePage = () => {
 
                         <div className="flex justify-between items-center mt-6 mb-5 pb-3">
                             <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-b-2 border-[#FFC107] pb-1">
-                                Recent Purchases ({orders.length})
+                                Recent Purchases ({totalOrders})
                             </span>
 
                         </div>
@@ -1249,164 +1289,159 @@ const ProfilePage = () => {
                             </div>
                         ) : (
                             <div className="space-y-4 pb-8">
-                                {(() => {
-                                    const totalPages = Math.ceil(orders.length / ordersPerPage);
-                                    const indexOfLastOrder = currentPage * ordersPerPage;
-                                    const indexOfFirstOrder = indexOfLastOrder - ordersPerPage;
-                                    const currentOrders = orders.slice(indexOfFirstOrder, indexOfLastOrder);
+                                {orders.map((order) => {
+                                    const firstItem = order.items?.[0]?.book || {};
+                                    const orderDate = new Date(order.createdAt).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' });
+                                    const orderNo = order.order_no || `ORD-${order.id.toString().padStart(5, '0')}`;
 
                                     return (
-                                        <>
-                                            {currentOrders.map((order) => {
-                                                const firstItem = order.items?.[0]?.book || {};
-                                                const orderDate = new Date(order.createdAt).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' });
-                                                const orderNo = order.order_no || `ORD-${order.id.toString().padStart(5, '0')}`;
+                                        <div key={order.id} className="bg-white border border-gray-200 rounded-xl p-4 flex flex-col md:flex-row gap-5 items-start md:items-center justify-between hover:shadow-[0_4px_20px_rgb(0,0,0,0.03)] transition-all duration-300 relative overflow-hidden group">
 
-                                                return (
-                                                    <div key={order.id} className="bg-white border border-gray-200 rounded-xl p-4 flex flex-col md:flex-row gap-5 items-start md:items-center justify-between hover:shadow-[0_4px_20px_rgb(0,0,0,0.03)] transition-all duration-300 relative overflow-hidden group">
+                                            <div className="flex gap-4 items-center w-full md:w-auto h-full">
+                                                <div className="w-[65px] h-[90px] rounded-lg overflow-hidden shadow-md border border-gray-200 relative shrink-0">
+                                                    <img
+                                                        src={
+                                                            firstItem.thumbnail?.url ||
+                                                            (typeof firstItem.thumbnail === 'string' ? (firstItem.thumbnail.startsWith('http') ? firstItem.thumbnail : `${process.env.NEXT_PUBLIC_API_URL}${firstItem.thumbnail}`) :
+                                                                (firstItem.image || "/placeholder.png"))
+                                                        }
+                                                        alt={firstItem.title || "Book"}
+                                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                                                    />
+                                                </div>
 
-                                                        <div className="flex gap-4 items-center w-full md:w-auto h-full">
-                                                            <div className="w-[65px] h-[90px] rounded-lg overflow-hidden shadow-md border border-gray-200 relative shrink-0">
-                                                                <img
-                                                                    src={
-                                                                        firstItem.thumbnail?.url ||
-                                                                        (typeof firstItem.thumbnail === 'string' ? (firstItem.thumbnail.startsWith('http') ? firstItem.thumbnail : `${process.env.NEXT_PUBLIC_API_URL}${firstItem.thumbnail}`) :
-                                                                            (firstItem.image || "/placeholder.png"))
-                                                                    }
-                                                                    alt={firstItem.title || "Book"}
-                                                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                                                                />
-                                                            </div>
+                                                <div className="flex flex-col justify-center h-full py-1">
+                                                    <h4 className="text-[15px] font-black text-[#1A1A1A] leading-snug line-clamp-1">{firstItem.title || "Unnamed Book"}</h4>
+                                                    <div className="flex items-center gap-1 mt-1 text-gray-400">
+                                                        <BookOpen size={11} className="stroke-[2.5]" />
+                                                        <span className="text-[12px] font-medium">by {firstItem.author || "Unknown"}</span>
+                                                    </div>
 
-                                                            <div className="flex flex-col justify-center h-full py-1">
-                                                                <h4 className="text-[15px] font-black text-[#1A1A1A] leading-snug line-clamp-1">{firstItem.title || "Unnamed Book"}</h4>
-                                                                <div className="flex items-center gap-1 mt-1 text-gray-400">
-                                                                    <BookOpen size={11} className="stroke-[2.5]" />
-                                                                    <span className="text-[12px] font-medium">by {firstItem.author || "Unknown"}</span>
-                                                                </div>
-
-                                                                <div className="flex gap-x-6 gap-y-2 mt-3">
-                                                                    <div>
-                                                                        <p className="text-[7px] font-black text-gray-300 uppercase tracking-[0.15em] mb-0.5">Order ID</p>
-                                                                        <p className="text-[11px] font-bold text-[#1A1A1A]">
-                                                                            #{orderNo}
-                                                                        </p>
-                                                                    </div>
-                                                                    <div>
-                                                                        <p className="text-[7px] font-black text-gray-300 uppercase tracking-[0.15em] mb-0.5">Order Date</p>
-                                                                        <p className="text-[11px] font-bold text-[#1A1A1A] flex items-center gap-1">
-                                                                            <Calendar size={10} className="text-gray-400 stroke-[2.5]" /> {orderDate}
-                                                                        </p>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
+                                                    <div className="flex gap-x-6 gap-y-2 mt-3">
+                                                        <div>
+                                                            <p className="text-[7px] font-black text-gray-300 uppercase tracking-[0.15em] mb-0.5">Order ID</p>
+                                                            <p className="text-[11px] font-bold text-[#1A1A1A]">
+                                                                #{orderNo}
+                                                            </p>
                                                         </div>
-
-                                                        <div className="flex flex-row md:flex-col items-center md:items-end justify-between w-full md:w-auto pt-3 md:pt-0 border-t border-gray-50 md:border-none">
-                                                            <div className="flex flex-col md:items-end">
-                                                                <span className="text-lg font-black text-[#1A1A1A]">₹{parseFloat(order.total_amount).toLocaleString()}</span>
-
-                                                                <div className="mt-1">
-                                                                    {order.delivery_status === 'delivered' ? (
-                                                                        <div className="flex items-center gap-1 text-green-600 bg-green-50 px-2 py-0.5 rounded-full border border-green-100/50">
-                                                                            <CheckCircle2 size={10} className="stroke-[2.5]" />
-                                                                            <span className="text-[9px] font-bold uppercase">Delivered</span>
-                                                                        </div>
-                                                                    ) : order.delivery_status === 'shipped' ? (
-                                                                        <div className="flex items-center gap-1 text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100/50">
-                                                                            <Truck size={10} className="stroke-[2.5]" />
-                                                                            <span className="text-[9px] font-bold uppercase">Shipped</span>
-                                                                        </div>
-                                                                    ) : order.delivery_status === 'cancelled' ? (
-                                                                        <div className="flex items-center gap-1 text-red-600 bg-red-50 px-2 py-0.5 rounded-full border border-red-100/50">
-                                                                            <XCircle size={10} className="stroke-[2.5]" />
-                                                                            <span className="text-[9px] font-bold uppercase">Cancelled</span>
-                                                                        </div>
-                                                                    ) : ['returned', 'refunded'].includes(order.delivery_status) ? (
-                                                                        <div className="flex items-center gap-1 text-purple-600 bg-purple-50 px-2 py-0.5 rounded-full border border-purple-100/50">
-                                                                            <RefreshCw size={10} className="stroke-[2.5]" />
-                                                                            <span className="text-[9px] font-bold uppercase">{order.delivery_status}</span>
-                                                                        </div>
-                                                                    ) : (
-                                                                        <div className="flex items-center gap-1 text-[#A67C00] bg-[#FFFbf0] px-2 py-0.5 rounded-full border border-[#FFECB3]/50">
-                                                                            <Clock size={10} className="stroke-[2.5] text-[#FFC107]" />
-                                                                            <span className="text-[9px] font-bold uppercase">{order.delivery_status || 'Processing'}</span>
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-                                                            </div>
-
-                                                            <div className="flex gap-2 mt-3">
-                                                                <button
-                                                                    onClick={() => router.push(`/order/${orderNo}`)}
-                                                                    className="bg-[#F8F9FA] text-[#1A1A1A] font-bold text-[11px] px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-gray-100 transition-all active:scale-95 whitespace-nowrap"
-                                                                >
-                                                                    Details
-                                                                </button>
-
-                                                                {order.delivery_status === 'processing' && (
-                                                                    <button
-                                                                        disabled={isProcessingAction}
-                                                                        onClick={() => handleCancelOrder(order.id)}
-                                                                        className="bg-red-50 text-red-600 font-bold text-[11px] px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-red-100 transition-all active:scale-95 whitespace-nowrap"
-                                                                    >
-                                                                        {isProcessingAction ? "..." : "Cancel"}
-                                                                    </button>
-                                                                )}
-
-                                                                {order.delivery_status === 'delivered' && !order.refund_requested && (
-                                                                    <button
-                                                                        onClick={() => {
-                                                                            setRefundOrderId(order.id);
-                                                                            setIsRefundModalOpen(true);
-                                                                        }}
-                                                                        className="bg-purple-50 text-purple-600 font-bold text-[11px] px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-purple-100 transition-all active:scale-95 whitespace-nowrap"
-                                                                    >
-                                                                        Refund
-                                                                    </button>
-                                                                )}
-                                                            </div>
+                                                        <div>
+                                                            <p className="text-[7px] font-black text-gray-300 uppercase tracking-[0.15em] mb-0.5">Order Date</p>
+                                                            <p className="text-[11px] font-bold text-[#1A1A1A] flex items-center gap-1">
+                                                                <Calendar size={10} className="text-gray-400 stroke-[2.5]" /> {orderDate}
+                                                            </p>
                                                         </div>
                                                     </div>
-                                                );
-                                            })}
-
-                                            {/* Pagination Controls */}
-                                            {totalPages > 1 && (
-                                                <div className="flex items-center justify-center gap-2 mt-8">
-                                                    <button
-                                                        disabled={currentPage === 1}
-                                                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                                                        className="w-10 h-10 rounded-xl border border-gray-200 flex items-center justify-center text-[#1A1A1A] disabled:opacity-30 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
-                                                    >
-                                                        <ChevronLeft size={18} className="stroke-[2.5]" />
-                                                    </button>
-
-                                                    {[...Array(totalPages)].map((_, i) => (
-                                                        <button
-                                                            key={i + 1}
-                                                            onClick={() => setCurrentPage(i + 1)}
-                                                            className={`w-10 h-10 rounded-xl flex items-center justify-center text-[13px] font-black transition-all ${currentPage === i + 1
-                                                                    ? "bg-[#FFC107] text-[#1A1A1A] shadow-lg shadow-[#FFC107]/20"
-                                                                    : "bg-white border border-gray-100 text-gray-400 hover:border-gray-300"
-                                                                }`}
-                                                        >
-                                                            {String(i + 1).padStart(2, '0')}
-                                                        </button>
-                                                    ))}
-
-                                                    <button
-                                                        disabled={currentPage === totalPages}
-                                                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                                                        className="w-10 h-10 rounded-xl border border-gray-200 flex items-center justify-center text-[#1A1A1A] disabled:opacity-30 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
-                                                    >
-                                                        <ChevronRight size={18} className="stroke-[2.5]" />
-                                                    </button>
                                                 </div>
-                                            )}
-                                        </>
+                                            </div>
+
+                                            <div className="flex flex-col items-start md:items-end w-full md:w-auto pt-4 md:pt-0 border-t border-gray-100 md:border-none mt-2 md:mt-0">
+                                                <div className="flex items-center justify-between md:flex-col md:items-end w-full md:w-auto gap-2">
+                                                    <span className="text-lg font-black text-[#1A1A1A]">₹{parseFloat(order.total_amount).toLocaleString()}</span>
+
+                                                    <div>
+                                                        {order.delivery_status === 'delivered' ? (
+                                                            <div className="flex items-center gap-1 text-green-600 bg-green-50 px-2 py-0.5 rounded-full border border-green-100/50">
+                                                                <CheckCircle2 size={10} className="stroke-[2.5]" />
+                                                                <span className="text-[9px] font-bold uppercase">Delivered</span>
+                                                            </div>
+                                                        ) : order.delivery_status === 'shipped' ? (
+                                                            <div className="flex items-center gap-1 text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100/50">
+                                                                <Truck size={10} className="stroke-[2.5]" />
+                                                                <span className="text-[9px] font-bold uppercase">Shipped</span>
+                                                            </div>
+                                                        ) : order.delivery_status === 'cancelled' ? (
+                                                            <div className="flex items-center gap-1 text-red-600 bg-red-50 px-2 py-0.5 rounded-full border border-red-100/50">
+                                                                <XCircle size={10} className="stroke-[2.5]" />
+                                                                <span className="text-[9px] font-bold uppercase">Cancelled</span>
+                                                            </div>
+                                                        ) : ['returned', 'refunded'].includes(order.delivery_status) ? (
+                                                            <div className="flex items-center gap-1 text-purple-600 bg-purple-50 px-2 py-0.5 rounded-full border border-purple-100/50">
+                                                                <RefreshCw size={10} className="stroke-[2.5]" />
+                                                                <span className="text-[9px] font-bold uppercase">{order.delivery_status}</span>
+                                                            </div>
+                                                        ) : (
+                                                            <div className="flex items-center gap-1 text-[#A67C00] bg-[#FFFbf0] px-2 py-0.5 rounded-full border border-[#FFECB3]/50">
+                                                                <Clock size={10} className="stroke-[2.5] text-[#FFC107]" />
+                                                                <span className="text-[9px] font-bold uppercase">{order.delivery_status || 'Processing'}</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex flex-wrap gap-2 mt-4 md:mt-2.5 w-full justify-start md:justify-end">
+                                                    <button
+                                                        onClick={() => router.push(`/order/${orderNo}`)}
+                                                        className="bg-[#F8F9FA] text-[#1A1A1A] font-bold text-[10px] md:text-[11px] px-3 md:px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-gray-100 transition-all active:scale-95 whitespace-nowrap"
+                                                    >
+                                                        Details
+                                                    </button>
+
+                                                    {['delivered', 'cancelled'].includes(String(order.delivery_status || '').toLowerCase()) && (
+                                                        order.refund_requested ? (
+                                                            <div className="bg-purple-100 text-purple-700 font-bold text-[10px] md:text-[11px] px-3 md:px-4 py-2 rounded-lg flex items-center gap-1 whitespace-nowrap">
+                                                                <Clock size={12} /> Refunded
+                                                            </div>
+                                                        ) : (
+                                                                <button
+                                                                    onClick={() => {
+                                                                        setRefundOrderId(order.id);
+                                                                        setIsRefundModalOpen(true);
+                                                                    }}
+                                                                    className="bg-purple-50 text-purple-600 font-bold text-[10px] md:text-[11px] px-3 md:px-4 py-2 rounded-lg flex items-center gap-1 hover:bg-purple-100 transition-all active:scale-95 whitespace-nowrap"
+                                                                >
+                                                                    <RefreshCw size={12} /> {String(order.delivery_status).toLowerCase() === 'delivered' ? 'Return' : 'Refund'}
+                                                                </button>
+                                                        )
+                                                    )}
+
+                                                    {order.delivery_status === 'processing' && (
+                                                        <button
+                                                            disabled={isProcessingAction}
+                                                            onClick={() => handleCancelOrder(order.id)}
+                                                            className="bg-red-50 text-red-600 font-bold text-[10px] md:text-[11px] px-3 md:px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-red-100 transition-all active:scale-95 whitespace-nowrap"
+                                                        >
+                                                            {isProcessingAction ? "..." : "Cancel"}
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
                                     );
-                                })()}
+                                })}
+
+                                {/* Pagination Controls */}
+                                {totalPages > 1 && (
+                                    <div className="flex items-center justify-center gap-2 mt-8">
+                                        <button
+                                            disabled={currentPage === 1}
+                                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                            className="w-10 h-10 rounded-xl border border-gray-200 flex items-center justify-center text-[#1A1A1A] disabled:opacity-30 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
+                                        >
+                                            <ChevronLeft size={18} className="stroke-[2.5]" />
+                                        </button>
+
+                                        {[...Array(totalPages)].map((_, i) => (
+                                            <button
+                                                key={i + 1}
+                                                onClick={() => setCurrentPage(i + 1)}
+                                                className={`w-10 h-10 rounded-xl flex items-center justify-center text-[13px] font-black transition-all ${currentPage === i + 1
+                                                    ? "bg-[#FFC107] text-[#1A1A1A] shadow-lg shadow-[#FFC107]/20"
+                                                    : "bg-white border border-gray-100 text-gray-400 hover:border-gray-300"
+                                                    }`}
+                                            >
+                                                {String(i + 1).padStart(2, '0')}
+                                            </button>
+                                        ))}
+
+                                        <button
+                                            disabled={currentPage === totalPages}
+                                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                            className="w-10 h-10 rounded-xl border border-gray-200 flex items-center justify-center text-[#1A1A1A] disabled:opacity-30 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
+                                        >
+                                            <ChevronRight size={18} className="stroke-[2.5]" />
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         )}
                     </div>
@@ -1475,17 +1510,7 @@ const ProfilePage = () => {
                                         </div>
                                     </div>
 
-                                    <div className="space-y-2">
-                                        <div className="flex justify-between items-center px-1">
-                                            <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Attachments</label>
-                                            <span className="text-[9px] font-black text-gray-300 uppercase letter tracking-widest">JPG, PNG, PDF (Max 5)</span>
-                                        </div>
 
-                                        <div className="w-24 h-24 border-2 border-dashed border-gray-200 rounded-2xl flex flex-col items-center justify-center gap-2 text-gray-300 hover:border-[#FFC107] hover:text-[#FFC107] transition-all cursor-pointer bg-[#F8F9FA]">
-                                            <Camera size={20} />
-                                            <span className="text-[8px] font-black uppercase tracking-widest">Upload</span>
-                                        </div>
-                                    </div>
 
                                     <button
                                         type="submit"
@@ -1690,9 +1715,17 @@ const ProfilePage = () => {
                     <div className="bg-white w-full max-w-md rounded-[32px] overflow-hidden shadow-2xl relative animate-in fade-in zoom-in duration-300">
                         <div className="p-8 border-b border-gray-100">
                             <h3 className="font-black text-xl text-[#1A1A1A] flex items-center gap-3">
-                                <RefreshCw className="text-purple-500" /> Request Refund
+                                <RefreshCw className="text-purple-500" /> {
+                                    orders.find(o => o.id === refundOrderId)?.delivery_status?.toLowerCase() === 'delivered' 
+                                    ? 'Return Order' 
+                                    : 'Request Refund'
+                                }
                             </h3>
-                            <p className="text-[11px] text-gray-400 font-medium tracking-tight mt-1">Please provide a valid reason for your refund request.</p>
+                            <p className="text-[11px] text-gray-400 font-medium tracking-tight mt-1">Please provide a valid reason for your {
+                                orders.find(o => o.id === refundOrderId)?.delivery_status?.toLowerCase() === 'delivered' 
+                                ? 'return' 
+                                : 'refund'
+                            } request.</p>
                         </div>
 
                         <form onSubmit={handleRefundRequest} className="p-8 space-y-6">

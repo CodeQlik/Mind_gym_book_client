@@ -2,14 +2,17 @@ import { ChevronDown, ShoppingBasket, User, LogOut } from "lucide-react";
 import { useSelector, useDispatch } from "react-redux";
 import { logoutUser } from "@/redux/slices/authSlice";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export default function Navbar() {
     const navItems = ['Home', 'Shop', 'Vendor', 'Pages', 'Blog', 'Contact'];
     const { user } = useSelector((state) => state.auth);
     const dispatch = useDispatch();
+    const router = useRouter();
 
     const handleLogout = () => {
         dispatch(logoutUser());
+        router.push("/");
     };
 
     return (

@@ -1,13 +1,16 @@
 "use client";
 import React, { useState } from "react";
 import Link from "next/link";
-import { Mail, Lock, Eye, EyeOff, ArrowRight, Chrome, Feather } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff, ArrowRight, Chrome } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
-import { loginUser, clearError } from "@/redux/slices/authSlice";
+import { loginUser, clearError, googleLoginAction } from "@/redux/slices/authSlice";
 import { toast } from "react-toastify";
+import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
 
-const LoginPage = () => {
+const GOOGLE_CLIENT_ID = "391302444219-88q5i1h8ju8b097e4277frteiis9abiq.apps.googleusercontent.com";
+
+const LoginContent = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [formData, setFormData] = useState({ email: "", password: "" });
 
@@ -29,8 +32,11 @@ const LoginPage = () => {
         }
 
         const result = await dispatch(loginUser(formData));
+        handleAuthResult(result);
+    };
 
-        if (loginUser.fulfilled.match(result)) {
+    const handleAuthResult = (result) => {
+        if (loginUser.fulfilled.match(result) || googleLoginAction.fulfilled.match(result)) {
             const loggedInUser = result.payload;
             toast.success("Successfully Logged In!");
 
@@ -41,41 +47,26 @@ const LoginPage = () => {
                 } else {
                     router.push("/");
                 }
-            }, 1500);
-        } else if (loginUser.rejected.match(result)) {
-            const errorMsg = typeof result.payload === 'string' ? result.payload : result.payload?.message || "Login failed";
+            }, 1000);
+        } else if (loginUser.rejected.match(result) || googleLoginAction.rejected.match(result)) {
+            const errorMsg = typeof result.payload === 'string' ? result.payload : result.payload?.message || "Authentication failed";
             toast.error(errorMsg);
         }
     };
 
+    const handleGoogleSuccess = async (credentialResponse) => {
+        if (credentialResponse.credential) {
+            const result = await dispatch(googleLoginAction(credentialResponse.credential));
+            handleAuthResult(result);
+        }
+    };
+
     return (
-        <div className="min-h-screen bg-[#FDFBF7] flex items-center justify-center p-6 relative">
-            {/* Background Decorative Blurs */}
-            <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
-                <div className="absolute top-1/4 -left-20 w-80 h-80 bg-[#D76B52]/10 rounded-full blur-[100px]" />
-                <div className="absolute bottom-1/4 -right-20 w-80 h-80 bg-[#2D3E50]/10 rounded-full blur-[100px]" />
-            </div>
-
-            <div className="max-w-[450px] w-full bg-white rounded-[40px] shadow-2xl shadow-[#2D3E50]/10 pt-8 pb-10 px-10 md:pt-10 md:pb-14 md:px-14 relative z-10 border border-white/20 backdrop-blur-sm">
-                {/* Brand Logo - Top Left & Compact */}
-                <div className="flex flex-col mb-8">
-                    <Link href="/" className="flex items-center gap-2 group mb-6 self-start">
-                        <div className="relative">
-                            <Feather className="text-secondary w-8 h-8 transform -rotate-12 group-hover:rotate-0 transition-all duration-500 ease-out" />
-                        </div>
-                        <div className="flex flex-col items-start pt-0.5">
-                            <h1 className="text-base font-bold text-secondary tracking-widest leading-none uppercase">
-                                Mind Gym Book
-                            </h1>
-                            <p className="text-[8px] tracking-[0.4em] text-secondary/50 font-black uppercase mt-1">Mental Excellence</p>
-                        </div>
-                    </Link>
-
-                    <div className="text-center w-full">
-                        <p className="text-secondary/40 text-[11px] font-black uppercase tracking-[0.2em] border-y border-secondary/5 py-3">
-                            Sign in to your account
-                        </p>
-                    </div>
+        <div className="min-h-screen bg-[#F8F9FA] flex items-center justify-center p-6 relative font-sans">
+            <div className="max-w-[440px] w-full bg-white rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.05)] border border-gray-100 p-8 md:p-12 relative z-10 transition-all duration-300">
+                <div className="text-center mb-10">
+                    <h1 className="text-2xl font-black text-gray-900 uppercase tracking-tight mb-2">Sign In</h1>
+                    <p className="text-gray-400 text-[11px] font-bold uppercase tracking-widest">Welcome back to Mind Gym Book</p>
                 </div>
 
                 {error && (
@@ -89,17 +80,17 @@ const LoginPage = () => {
                 <form className="space-y-5" onSubmit={handleLogin}>
                     {/* Email Identification */}
                     <div className="space-y-1.5">
-                        <label className="text-[10px] font-black text-[#2D3E50] uppercase tracking-widest pl-1">Email Address</label>
+                        <label className="text-[10px] font-black text-gray-900 uppercase tracking-[0.15em] pl-1">Email Address</label>
                         <div className="relative group">
-                            <span className="absolute left-5 top-1/2 -translate-y-1/2 text-secondary/30 transition-colors group-focus-within:text-[#D76B52]">
-                                <Mail size={18} />
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 transition-colors group-focus-within:text-[#F7941E]">
+                                <Mail size={16} />
                             </span>
                             <input
                                 type="email"
                                 name="email"
                                 value={formData.email}
-                                placeholder="name@domain.com"
-                                className="w-full h-14 bg-[#FDFBF7] border border-secondary/10 rounded-2xl pl-14 pr-6 font-sans font-bold text-secondary text-sm outline-none transition-all focus:border-[#D76B52]/40 focus:bg-white focus:shadow-xl focus:shadow-[#D76B52]/5"
+                                placeholder="Email Address"
+                                className="w-full h-12 bg-gray-50/50 border border-gray-100 rounded-xl pl-12 pr-6 font-sans font-bold text-gray-900 text-sm outline-none transition-all focus:border-[#F7941E]/40 focus:bg-white focus:shadow-lg focus:shadow-[#F7941E]/5"
                                 onChange={handleChange}
                                 required
                             />
@@ -109,28 +100,28 @@ const LoginPage = () => {
                     {/* Password Access */}
                     <div className="space-y-1.5">
                         <div className="flex justify-between px-1">
-                            <label className="text-[10px] font-black text-[#2D3E50] uppercase tracking-widest">Password</label>
-                            <Link href="/forgot-password" size="sm" className="text-[10px] font-black text-[#D76B52] uppercase tracking-widest hover:underline">Forgot?</Link>
+                            <label className="text-[10px] font-black text-gray-900 uppercase tracking-[0.15em]">Password</label>
+                            <Link href="/forgot-password" size="sm" className="text-[10px] font-black text-[#F7941E] uppercase tracking-widest hover:underline">Forgot?</Link>
                         </div>
                         <div className="relative group">
-                            <span className="absolute left-5 top-1/2 -translate-y-1/2 text-secondary/30 transition-colors group-focus-within:text-[#D76B52]">
-                                <Lock size={18} />
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 transition-colors group-focus-within:text-[#F7941E]">
+                                <Lock size={16} />
                             </span>
                             <input
                                 type={showPassword ? "text" : "password"}
                                 name="password"
                                 value={formData.password}
-                                placeholder="••••••••••••"
-                                className="w-full h-14 bg-[#FDFBF7] border border-secondary/10 rounded-2xl pl-14 pr-14 font-sans font-bold text-secondary text-sm outline-none transition-all focus:border-[#D76B52]/40 focus:bg-white focus:shadow-xl focus:shadow-[#D76B52]/5"
+                                placeholder="••••••••"
+                                className="w-full h-12 bg-gray-50/50 border border-gray-100 rounded-xl pl-12 pr-14 font-sans font-bold text-gray-900 text-sm outline-none transition-all focus:border-[#F7941E]/40 focus:bg-white focus:shadow-lg focus:shadow-[#F7941E]/5"
                                 onChange={handleChange}
                                 required
                             />
                             <button
                                 type="button"
                                 onClick={() => setShowPassword(!showPassword)}
-                                className="absolute right-5 top-1/2 -translate-y-1/2 text-secondary/30 hover:text-secondary transition-colors"
+                                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-600 transition-colors"
                             >
-                                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                             </button>
                         </div>
                     </div>
@@ -139,35 +130,49 @@ const LoginPage = () => {
                     <button
                         type="submit"
                         disabled={loading}
-                        className="w-full h-14 bg-[#D76B52] text-white rounded-2xl font-sans font-black uppercase tracking-widest shadow-xl shadow-[#D76B52]/20 hover:bg-red-950 transition-all duration-500 flex items-center justify-center gap-3 group mt-4 disabled:opacity-70 disabled:cursor-not-allowed"
+                        className="w-full h-12 bg-[#F7941E] text-black rounded-xl font-sans font-black uppercase tracking-widest shadow-lg shadow-[#F7941E]/20 hover:bg-black hover:text-white transition-all duration-300 flex items-center justify-center gap-2 mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        {loading ? "Signing In..." : "Sign In"} <ArrowRight className="group-hover:translate-x-1 transition-transform" size={18} />
+                        {loading ? "Signing In..." : "Sign In"} <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
                     </button>
                 </form>
 
-                {/* Social Option */}
-                <div className="mt-8">
+                {/* <div className="mt-8">
                     <div className="flex items-center gap-4 mb-6">
-                        <div className="h-[1px] flex-1 bg-secondary/10" />
-                        <span className="text-[9px] font-black text-secondary/20 uppercase tracking-[0.2em]">or continue with</span>
-                        <div className="h-[1px] flex-1 bg-secondary/10" />
+                        <div className="h-[1px] flex-1 bg-gray-100" />
+                        <span className="text-[9px] font-black text-gray-300 uppercase tracking-[0.2em]">or continue with</span>
+                        <div className="h-[1px] flex-1 bg-gray-100" />
                     </div>
 
-                    <button className="w-full h-14 bg-white border border-secondary/10 rounded-2xl flex items-center justify-center gap-3 font-sans font-bold text-sm text-[#2D3E50] hover:bg-[#FDFBF7] hover:border-[#D76B52]/30 transition-all duration-300 shadow-sm hover:shadow-lg">
-                        <Chrome size={20} className="text-[#D34836]" /> Sign in with Google
-                    </button>
-                </div>
+                    <div className="flex justify-center">
+                        <GoogleLogin
+                            onSuccess={handleGoogleSuccess}
+                            onError={() => toast.error("Google Login Failed")}
+                            useOneTap
+                            theme="outline"
+                            shape="pill"
+                            width="100%"
+                        />
+                    </div>
+                </div> */}
 
-                <div className="mt-8 text-center border-t border-secondary/5 pt-6">
-                    <p className="text-secondary/40 text-xs font-sans font-bold">
+                <div className="mt-8 text-center border-t border-gray-50 pt-6">
+                    <p className="text-gray-400 text-xs font-sans font-bold">
                         Don't have an account?
-                        <Link href="/register" className="ml-2 text-[#D76B52] font-black uppercase tracking-widest hover:underline">
+                        <Link href="/register" className="ml-1 text-[#F7941E] font-black uppercase tracking-widest hover:underline">
                             Create Account
                         </Link>
                     </p>
                 </div>
             </div>
         </div>
+    );
+};
+
+const LoginPage = () => {
+    return (
+        <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+            <LoginContent />
+        </GoogleOAuthProvider>
     );
 };
 

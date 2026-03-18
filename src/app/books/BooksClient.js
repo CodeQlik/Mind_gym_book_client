@@ -28,17 +28,11 @@ function BooksContent() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [currentPage, setCurrentPage] = useState(1);
+    const [showMobileFilters, setShowMobileFilters] = useState(false);
     const booksPerPage = 12; // Shows 2 rows of 4 or 4 rows of 2 depending on screen size
     const dispatch = useDispatch();
     const { items: wishlistItems } = useSelector(state => state.wishlist);
-    const [priceRange, setPriceRange] = useState(500);
-    const [selectedRatings, setSelectedRatings] = useState([]);
-
-    const toggleRating = (rating) => {
-        setSelectedRatings(prev =>
-            prev.includes(rating) ? prev.filter(r => r !== rating) : [...prev, rating]
-        );
-    };
+    const [priceRange, setPriceRange] = useState(2000);
 
     // Fetch books and categories on mount
     useEffect(() => {
@@ -63,11 +57,11 @@ function BooksContent() {
 
             const data = booksResponse.data?.data || {};
             const categoriesData = categoriesResponse.data?.data || [];
-            
+
             let booksArray = [];
             // Target data.books specifically
             const booksSource = data.books || data;
-            
+
             if (Array.isArray(booksSource)) {
                 booksArray = booksSource;
             } else if (booksSource && typeof booksSource === 'object') {
@@ -102,12 +96,8 @@ function BooksContent() {
             const bookPrice = parseFloat(book.price) || 0;
             const matchesPrice = bookPrice <= priceRange;
 
-            // Use the book's rating if available, otherwise default to a reasonable value
-            const bookRating = book.average_rating || book.rating || 4;
-            const matchesRating = selectedRatings.length === 0 || selectedRatings.some(r => bookRating >= r);
-
             // Disable is_active check as it's missing from API
-            return matchesCategory && matchesSearch && matchesPrice && matchesRating;
+            return matchesCategory && matchesSearch && matchesPrice;
         })
         .sort((a, b) => {
             if (sortBy === "price-low") return parseFloat(a.price) - parseFloat(b.price);
@@ -143,7 +133,7 @@ function BooksContent() {
 
 
     return (
-        <div className="bg-[#F7F6F3] min-h-screen font-['Outfit',sans-serif]">
+        <div className={`bg-[#F7F6F3] min-h-screen font-['Outfit',sans-serif] ${showMobileFilters ? 'overflow-hidden h-screen' : ''}`}>
             {/* Custom Styles for Specific Aesthetics */}
             <style jsx global>{`
                 @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Outfit:wght@300;400;500;600&display=swap');
@@ -159,9 +149,27 @@ function BooksContent() {
                     opacity: 0.3;
                 }
 
+                aside::-webkit-scrollbar {
+                    display: none;
+                }
+                aside {
+                    -ms-overflow-style: none;
+                    scrollbar-width: none;
+                }
+
+                .gold-gradient-divider {
+                    height: 1.5px;
+                    background: linear-gradient(90deg, #EBEBEB 0%, #E8B84B 50%, #EBEBEB 100%);
+                    opacity: 0.5;
+                }
+
                 input[type=range].gold-range {
                     -webkit-appearance: none;
+                    width: 100%;
+                    height: 4px;
                     background: #EBEBEB;
+                    border-radius: 999px;
+                    outline: none;
                 }
                 input[type=range].gold-range::-webkit-slider-thumb {
                     -webkit-appearance: none;
@@ -172,12 +180,17 @@ function BooksContent() {
                     border: 2.5px solid #E8B84B;
                     box-shadow: 0 2px 8px rgba(232,184,75,0.3);
                     cursor: pointer;
+                    transition: all 0.2s ease;
+                }
+                input[type=range].gold-range::-webkit-slider-thumb:hover {
+                    transform: scale(1.1);
+                    box-shadow: 0 3px 12px rgba(232,184,75,0.5);
                 }
             `}</style>
 
             {/* Hero Section - PRESERVED */}
             <section
-                className="relative py-60 px-4 md:px-8 bg-cover bg-center bg-no-repeat"
+                className="relative py-28 md:py-60 px-4 md:px-8 bg-cover bg-center bg-no-repeat"
                 style={{ backgroundImage: "url('/book-banner.png')" }}
             >
                 <div className="max-w-7xl mx-auto text-center relative z-10">
@@ -190,7 +203,7 @@ function BooksContent() {
                 </div>
             </section>
 
-            <div className="flex p-8">
+            <div className="flex p-4 md:p-8">
                 {/* SIDEBAR */}
                 <aside className="w-[300px] min-h-screen bg-white border-r border-[#EBEBEB] p-10 px-12 flex flex-col gap-8 flex-shrink-0 sticky top-0 h-screen overflow-y-auto hidden lg:flex">
                     <div className="flex items-center gap-3">
@@ -229,17 +242,17 @@ function BooksContent() {
                         <div className="text-[13px] font-bold tracking-[0.2em] uppercase text-[#999690] mb-4">Price Range</div>
                         <div className="flex justify-between items-center mb-1">
                             <span className="text-xs font-bold text-[#999690]">₹0</span>
-                            <span className="text-xs font-bold text-[#999690]">₹500+</span>
+                            <span className="text-xs font-bold text-[#999690]">₹2000+</span>
                         </div>
                         <input
                             type="range"
                             min="0"
-                            max="500"
+                            max="2000"
                             step="50"
                             value={priceRange}
                             onChange={(e) => setPriceRange(parseInt(e.target.value))}
-                            className="gold-range w-full h-[3px] rounded-full outline-none cursor-pointer"
-                            style={{ background: `linear-gradient(90deg, #E8B84B ${(priceRange / 500) * 100}%, #EBEBEB ${(priceRange / 500) * 100}%)` }}
+                            className="gold-range"
+                            style={{ background: `linear-gradient(90deg, #E8B84B ${(priceRange / 2000) * 100}%, #EBEBEB ${(priceRange / 2000) * 100}%)` }}
                         />
                         <div className="flex items-center justify-between mt-2">
                             <div className="text-[15px] font-bold text-[#0C0C0C]">Up to ₹{priceRange}</div>
@@ -250,63 +263,128 @@ function BooksContent() {
                     <div className="gold-gradient-divider"></div>
 
                     <div className="space-y-4">
-                        <div className="text-[13px] font-bold tracking-[0.2em] uppercase text-[#999690] mb-4">Customer Rating</div>
-                        <div className="flex flex-col gap-2">
-                            {[4, 3, 2, 1].map((rating) => {
-                                const isSelected = selectedRatings.includes(rating);
-                                return (
-                                    <div
-                                        key={rating}
-                                        onClick={() => toggleRating(rating)}
-                                        className={`flex items-center justify-between p-2.5 rounded-xl cursor-pointer transition-all duration-300 group ${isSelected ? "bg-[#0C0C0C] text-white" : "bg-transparent text-[#999690] hover:bg-[#F7F6F3] hover:text-[#0C0C0C]"}`}
-                                    >
-                                        <div className="flex items-center gap-3">
-                                            <div className="flex gap-0.5">
-                                                {[...Array(5)].map((_, i) => (
-                                                    <span key={i} className={`text-xs ${i < rating ? "text-[#E8B84B]" : "text-[#DDD] group-hover:text-[#CCC]"}`}>★</span>
-                                                ))}
-                                            </div>
-                                            <span className={`text-sm font-medium ${isSelected ? "text-white/90" : "text-[#999690]"}`}>{rating} & up</span>
-                                        </div>
-                                        {isSelected && (
-                                            <div className="w-4 h-4 rounded-full bg-[#E8B84B] flex items-center justify-center">
-                                                <svg className="w-2.5 h-2.5 text-[#0C0C0C]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4">
-                                                    <polyline points="20 6 9 17 4 12" />
-                                                </svg>
-                                            </div>
-                                        )}
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-
-                    <div className="gold-gradient-divider"></div>
-
-                    <div className="space-y-4">
                         <div className="text-[13px] font-bold tracking-[0.2em] uppercase text-[#999690] mb-4">Sort By</div>
-                        <div className="relative group">
-                            <select
-                                value={sortBy}
-                                onChange={(e) => setSortBy(e.target.value)}
-                                className="w-full pl-4 pr-10 py-3 rounded-xl border-1.5 border-[#EBEBEB] bg-white text-[14px] font-bold text-[#0C0C0C] outline-none appearance-none cursor-pointer focus:border-[#E8B84B] focus:ring-4 focus:ring-[#E8B84B]/5 transition-all"
-                            >
-                                <option value="popular">Most Popular</option>
-                                <option value="newest">Newest First</option>
-                                <option value="price-low">Price: Low to High</option>
-                                <option value="price-high">Price: High to Low</option>
-                            </select>
-                            <div className="absolute right-4 top-1/2 -translate-y-1/2 p-1 bg-[#F7F6F3] rounded-md pointer-events-none group-hover:bg-[#E8B84B]/10 transition-colors">
-                                <svg className="w-3.5 h-3.5 text-[#999690] group-hover:text-[#E8B84B] transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                                    <path d="M6 9l6 6 6-6" />
-                                </svg>
-                            </div>
+                        <div className="flex flex-col gap-1">
+                            {[
+                                { id: "popular", name: "Most Popular" },
+                                { id: "newest", name: "Newest First" },
+                                { id: "price-low", name: "Price: Low to High" },
+                                { id: "price-high", name: "Price: High to Low" }
+                            ].map((opt) => (
+                                <div
+                                    key={opt.id}
+                                    onClick={() => setSortBy(opt.id)}
+                                    className={`flex items-center gap-3 px-3 py-2 rounded-xl cursor-pointer text-[15px] transition-all duration-200 ${sortBy === opt.id ? "bg-[#E8B84B] text-[#0C0C0C] font-semibold" : "text-[#999690] hover:bg-[#F7F6F3] hover:text-[#0C0C0C]"}`}
+                                >
+                                    <div className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center transition-all ${sortBy === opt.id ? "border-[#0C0C0C]" : "border-current opacity-40"}`}>
+                                        {sortBy === opt.id && <div className="w-1.5 h-1.5 rounded-full bg-[#0C0C0C]" />}
+                                    </div>
+                                    {opt.name}
+                                </div>
+                            ))}
                         </div>
                     </div>
                 </aside>
 
+                {/* MOBILE FILTERS DRAWER */}
+                <div className={`fixed inset-0 bg-black/50 z-[100] transition-opacity duration-300 lg:hidden ${showMobileFilters ? "opacity-100" : "opacity-0 pointer-events-none"}`} onClick={() => setShowMobileFilters(false)}>
+                    <div
+                        className={`absolute right-0 top-0 w-[300px] h-full bg-white transition-transform duration-300 flex flex-col p-8 gap-6 overflow-y-auto ${showMobileFilters ? "translate-x-0" : "translate-x-full"}`}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex items-center justify-between mb-2">
+                            <h2 className="text-xl font-bold">Filters</h2>
+                            <button onClick={() => setShowMobileFilters(false)} className="p-2 hover:bg-gray-100 rounded-lg">
+                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+
+                        <div className="gold-gradient-divider"></div>
+
+                        {/* Repeat Sidebar Sections for Mobile */}
+                        <div className="space-y-4">
+                            <div className="text-[13px] font-bold tracking-[0.2em] uppercase text-[#999690] mb-4">Categories</div>
+                            <div className="flex flex-col gap-1">
+                                {categories.map((cat) => (
+                                    <div
+                                        key={cat.id}
+                                        onClick={() => {
+                                            setSelectedCategory(cat.id.toString());
+                                            setShowMobileFilters(false);
+                                        }}
+                                        className={`flex items-center gap-3 px-3 py-2 rounded-xl cursor-pointer text-[16px] transition-all duration-200 ${selectedCategory === cat.id.toString() ? "bg-[#E8B84B] text-[#0C0C0C] font-semibold" : "text-[#999690] hover:bg-[#F7F6F3] hover:text-[#0C0C0C]"}`}
+                                    >
+                                        <div className={`w-4 h-4 rounded-md border-1.5 flex items-center justify-center ${selectedCategory === cat.id.toString() ? "bg-[#0C0C0C] border-[#0C0C0C]" : "border-current"}`}>
+                                            {selectedCategory === cat.id.toString() && <svg className="w-2.5 h-2.5 text-[#E8B84B]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4"><polyline points="20 6 9 17 4 12" /></svg>}
+                                        </div>
+                                        {cat.name}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="gold-gradient-divider"></div>
+
+                        <div className="space-y-4">
+                            <div className="text-[13px] font-bold tracking-[0.2em] uppercase text-[#999690] mb-4">Price Range</div>
+                            <input
+                                type="range"
+                                min="0"
+                                max="2000"
+                                step="50"
+                                value={priceRange}
+                                onChange={(e) => setPriceRange(parseInt(e.target.value))}
+                                className="gold-range"
+                                style={{ background: `linear-gradient(90deg, #E8B84B ${(priceRange / 2000) * 100}%, #EBEBEB ${(priceRange / 2000) * 100}%)` }}
+                            />
+                            <div className="text-[14px] font-bold mt-2 text-[#0C0C0C]">Up to ₹{priceRange}</div>
+                        </div>
+
+                        <div className="gold-gradient-divider"></div>
+
+                        <div className="space-y-4">
+                            <div className="text-[13px] font-bold tracking-[0.2em] uppercase text-[#999690] mb-4">Sort By</div>
+                            <div className="flex flex-col gap-1">
+                                {[
+                                    { id: "popular", name: "Most Popular" },
+                                    { id: "newest", name: "Newest First" },
+                                    { id: "price-low", name: "Price: Low to High" },
+                                    { id: "price-high", name: "Price: High to Low" }
+                                ].map((opt) => (
+                                    <div
+                                        key={opt.id}
+                                        onClick={() => setSortBy(opt.id)}
+                                        className={`flex items-center gap-3 px-3 py-2 rounded-xl cursor-pointer text-[14px] transition-all duration-200 ${sortBy === opt.id ? "bg-[#E8B84B] text-[#0C0C0C] font-semibold" : "text-[#999690] hover:bg-[#F7F6F3] hover:text-[#0C0C0C]"}`}
+                                    >
+                                        <div className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center transition-all ${sortBy === opt.id ? "border-[#0C0C0C]" : "border-current opacity-40"}`}>
+                                            {sortBy === opt.id && <div className="w-1.5 h-1.5 rounded-full bg-[#0C0C0C]" />}
+                                        </div>
+                                        {opt.name}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="gold-gradient-divider"></div>
+
+                        <button
+                            onClick={() => {
+                                setSelectedCategory("all");
+                                setSearchQuery("");
+                                setPriceRange(2000);
+                                setShowMobileFilters(false);
+                            }}
+                            className="w-full py-4 bg-black text-white rounded-xl font-bold uppercase tracking-widest text-xs"
+                        >
+                            Reset Filters
+                        </button>
+                    </div>
+                </div>
+
                 {/* MAIN CONTENT */}
-                <main className="flex-1 p-9 flex flex-col gap-7 min-w-0">
+                <main className="flex-1 p-0 md:p-9 flex flex-col gap-7 min-w-0">
                     <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                         <div className="font-['Cormorant_Garamond',serif] text-[32px] font-bold text-[#0C0C0C]">
                             Explore <span className="text-outlined">Books</span>
@@ -325,24 +403,20 @@ function BooksContent() {
                             />
                         </div>
 
-                        <div className="flex items-center gap-4">
-                            {!loading && (
-                                <div className="text-[12px] font-medium text-[#999690] bg-white border-1.5 border-[#EBEBEB] px-4 py-2.5 rounded-xl whitespace-nowrap">
-                                    {totalBooks > 0 ? (
-                                        <>Showing <b className="text-[#0C0C0C]">{startIndex + 1}–{Math.min(endIndex, totalBooks)}</b> of <b className="text-[#0C0C0C]">{totalBooks}</b> titles</>
-                                    ) : (
-                                        <span className="text-red-500 font-bold uppercase tracking-wider">No results found</span>
-                                    )}
-                                </div>
-                            )}
+                        <div className="flex items-center gap-2 md:gap-4 w-full md:w-auto">
+                            <button
+                                onClick={() => setShowMobileFilters(true)}
+                                className="lg:hidden flex items-center justify-center gap-2 px-4 py-3 bg-white border border-[#EBEBEB] rounded-xl text-[13px] font-bold text-secondary hover:border-primary transition-all whitespace-nowrap"
+                            >
+                                <Filter size={16} /> Filters
+                            </button>
                             <button
                                 onClick={() => {
                                     setSelectedCategory("all");
                                     setSearchQuery("");
                                     setPriceRange(500);
-                                    setSelectedRatings([]);
                                 }}
-                                className="text-[11.5px] font-bold text-[#999690] hover:text-[#E8B84B] tracking-widest uppercase transition-colors"
+                                className="text-[11.5px] font-bold text-[#999690] hover:text-[#E8B84B] tracking-widest uppercase transition-colors whitespace-nowrap"
                             >
                                 Clear All
                             </button>
@@ -355,7 +429,7 @@ function BooksContent() {
                             <p className="text-[#999690] font-bold uppercase tracking-widest text-[10px]">Updating Collection...</p>
                         </div>
                     ) : (
-                        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mt-8">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mt-8">
                             {paginatedBooks.length > 0 ? (
                                 paginatedBooks.map((book) => {
                                     const thumbnailUrl = book.thumbnail?.url || book.thumbnail || "/placeholder-book.jpg";
@@ -377,6 +451,15 @@ function BooksContent() {
                                                 >
                                                     <Heart size={12} className={`${wishlistItems.some(item => item.id === book.id) ? "fill-red-500 text-red-500" : "text-[#666] group-hover:text-red-500"}`} />
                                                 </button>
+
+                                                <div className="absolute top-2.5 left-2.5 flex flex-col gap-1 z-20">
+                                                    {(book.is_bestseller || book.is_bestselling) && (
+                                                        <span className="bg-[#E8B84B] text-[#0C0C0C] text-[8px] font-black uppercase px-2 py-0.5 rounded-md shadow-sm">Bestseller</span>
+                                                    )}
+                                                    {book.is_premium && (
+                                                        <span className="bg-[#0C0C0C] text-white text-[8px] font-black uppercase px-2 py-0.5 rounded-md shadow-sm">Premium</span>
+                                                    )}
+                                                </div>
                                             </div>
 
                                             <div className="p-3 flex flex-col gap-1.5 flex-1 relative z-10">
@@ -387,17 +470,7 @@ function BooksContent() {
                                                     <p className="text-[10.5px] text-[#999690] leading-tight">{book.author_name || book.author || "Mind Gym Author"}</p>
                                                 </div>
 
-                                                <div className="flex items-center gap-1">
-                                                    <div className="flex gap-0.5">
-                                                        {[...Array(5)].map((_, i) => {
-                                                            const rating = book.average_rating || book.rating || 5;
-                                                            return (
-                                                                <span key={i} className={`text-[10px] ${i < Math.floor(rating) ? "text-[#E8B84B]" : "text-[#DDD]"}`}>★</span>
-                                                            );
-                                                        })}
-                                                    </div>
-                                                    <span className="text-[10px] text-[#C0BDB7]">({book.reviews_count || book.total_reviews || 0})</span>
-                                                </div>
+
 
                                                 <div className="flex items-center justify-between mt-auto pt-1">
                                                     <div className="text-[20px] font-black text-[#0C0C0C]">
@@ -425,12 +498,11 @@ function BooksContent() {
                                     <p className="text-[#999690] max-w-sm mx-auto text-[15px] leading-relaxed">
                                         We couldn't find any books matching your current filters. Try broadening your search or clearing the filters to explore our full collection.
                                     </p>
-                                    <button 
+                                    <button
                                         onClick={() => {
                                             setSelectedCategory("all");
                                             setSearchQuery("");
                                             setPriceRange(500);
-                                            setSelectedRatings([]);
                                         }}
                                         className="mt-8 px-8 py-3 bg-[#0C0C0C] text-white rounded-xl font-bold text-[14px] hover:bg-[#E8B84B] hover:text-[#0C0C0C] transition-all duration-300"
                                     >
@@ -455,19 +527,36 @@ function BooksContent() {
                                     <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="15 18 9 12 15 6" /></svg>
                                 </button>
 
-                                <div className="flex items-center gap-2">
-                                    {Array.from({ length: totalPages }, (_, i) => (
-                                        <button
-                                            key={i + 1}
-                                            onClick={() => {
-                                                setCurrentPage(i + 1);
-                                                window.scrollTo({ top: 400, behavior: "smooth" });
-                                            }}
-                                            className={`w-10 h-10 rounded-xl font-bold text-[13px] transition-all duration-300 ${currentPage === i + 1 ? "bg-[#E8B84B] text-[#0C0C0C] shadow-lg shadow-[#E8B84B]/20 scale-110" : "bg-white border-1.5 border-[#EBEBEB] text-[#999690] hover:border-[#E8B84B] hover:text-[#0C0C0C]"}`}
-                                        >
-                                            {i + 1}
-                                        </button>
-                                    ))}
+                                <div className="flex items-center gap-1 sm:gap-2">
+                                    {Array.from({ length: totalPages }, (_, i) => {
+                                        const pageNum = i + 1;
+                                        // On mobile, show only current page, first, last, and 1 sibling
+                                        const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
+                                        const shouldShow = !isMobile ||
+                                            pageNum === 1 ||
+                                            pageNum === totalPages ||
+                                            Math.abs(pageNum - currentPage) <= 1;
+
+                                        if (!shouldShow) {
+                                            if (pageNum === 2 || pageNum === totalPages - 1) {
+                                                return <span key={pageNum} className="text-[#999690]">.</span>;
+                                            }
+                                            return null;
+                                        }
+
+                                        return (
+                                            <button
+                                                key={pageNum}
+                                                onClick={() => {
+                                                    setCurrentPage(pageNum);
+                                                    window.scrollTo({ top: 400, behavior: "smooth" });
+                                                }}
+                                                className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl font-bold text-[13px] transition-all duration-300 ${currentPage === pageNum ? "bg-[#E8B84B] text-[#0C0C0C] shadow-lg shadow-[#E8B84B]/20 scale-110" : "bg-white border-1.5 border-[#EBEBEB] text-[#999690] hover:border-[#E8B84B] hover:text-[#0C0C0C]"}`}
+                                            >
+                                                {pageNum}
+                                            </button>
+                                        );
+                                    })}
                                 </div>
 
                                 <button

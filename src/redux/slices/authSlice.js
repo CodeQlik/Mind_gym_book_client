@@ -2,6 +2,20 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import api from "@/lib/axios";
 import Cookies from "js-cookie";
 
+// Async thunk for Google login
+export const googleLoginAction = createAsyncThunk(
+    "auth/googleLogin",
+    async (id_token, { rejectWithValue }) => {
+        try {
+            const response = await api.post("/users/google-login", { id_token });
+            return response.data.data;
+        } catch (error) {
+            const message = error.response?.data?.message || error.response?.data || error.message || "Google Login failed";
+            return rejectWithValue(message);
+        }
+    }
+);
+
 // Async thunk for login
 export const loginUser = createAsyncThunk(
     "auth/login",
@@ -190,6 +204,39 @@ const authSlice = createSlice({
                 }
             })
             .addCase(loginUser.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload;
+            })
+            // Google Login
+            .addCase(googleLoginAction.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(googleLoginAction.fulfilled, (state, action) => {
+                state.loading = false;
+                const { token, accessToken, refreshToken, ...userData } = action.payload.user ? action.payload : { ...action.payload };
+                const actualUser = action.payload.user || userData;
+                const validToken = token || accessToken || state.token;
+
+                state.user = actualUser;
+                state.token = validToken;
+                state.refreshToken = action.payload.refreshToken || state.refreshToken;
+
+                if (typeof window !== "undefined") {
+                    const userString = JSON.stringify(actualUser);
+                    localStorage.setItem("user", userString);
+                    if (validToken) {
+                        localStorage.setItem("token", validToken);
+                        Cookies.set("accessToken", validToken, { expires: 7 });
+                    }
+                    if (action.payload.refreshToken) {
+                        localStorage.setItem("refreshToken", action.payload.refreshToken);
+                        Cookies.set("refreshToken", action.payload.refreshToken, { expires: 7 });
+                    }
+                    Cookies.set("user", userString, { expires: 7 });
+                }
+            })
+            .addCase(googleLoginAction.rejected, (state, action) => {
                 state.loading = false;
                 state.error = action.payload;
             })

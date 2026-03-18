@@ -20,11 +20,6 @@ const services = [
         subtitle: "100% protected checkout",
     },
     {
-        icon: Headset,
-        title: "24/7 Support",
-        subtitle: "Expert assistance anytime",
-    },
-    {
         icon: CheckCircle,
         title: "Quality Books",
         subtitle: "Handpicked curated copies",
@@ -33,9 +28,9 @@ const services = [
 
 const ServiceBar = () => {
     return (
-        <section className="py-12 bg-white">
+        <section className="py-12 bg-white hidden md:block">
             <div className="max-w-[1500px] mx-auto px-6">
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+                <div className="flex flex-wrap justify-center items-stretch gap-6 lg:gap-10">
                     {services.map((service, index) => {
                         const isSupport = service.title === "24/7 Support";
                         return (

@@ -134,33 +134,11 @@ const RegisterPage = () => {
     };
 
     return (
-        <div className="min-h-screen bg-[#FDFBF7] flex items-center justify-center p-6 relative">
-            {/* Background Decorative Blurs */}
-            <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
-                <div className="absolute top-1/4 -left-20 w-80 h-80 bg-[#D76B52]/10 rounded-full blur-[100px]" />
-                <div className="absolute bottom-1/4 -right-20 w-80 h-80 bg-[#2D3E50]/10 rounded-full blur-[100px]" />
-            </div>
-
-            <div className="max-w-[500px] w-full bg-white rounded-[40px] shadow-2xl shadow-[#2D3E50]/10 pt-8 pb-10 px-10 md:pt-10 md:pb-14 md:px-14 relative z-10 border border-white/20 backdrop-blur-sm">
-                {/* Brand Logo - Top Left & Compact */}
-                <div className="flex flex-col mb-6">
-                    <Link href="/" className="flex items-center gap-2 group mb-4 self-start">
-                        <div className="relative">
-                            <Feather className="text-secondary w-8 h-8 transform -rotate-12 group-hover:rotate-0 transition-all duration-500 ease-out" />
-                        </div>
-                        <div className="flex flex-col items-start pt-0.5">
-                            <h1 className="text-base font-bold text-secondary tracking-widest leading-none uppercase">
-                                Mind Gym Book
-                            </h1>
-                            <p className="text-[8px] tracking-[0.4em] text-secondary/50 font-black uppercase mt-1">Mental Excellence</p>
-                        </div>
-                    </Link>
-
-                    <div className="text-center w-full">
-                        <p className="text-secondary/40 text-[11px] font-black uppercase tracking-[0.2em] border-y border-secondary/5 py-3">
-                            Create a new account
-                        </p>
-                    </div>
+        <div className="min-h-screen bg-[#F8F9FA] flex items-center justify-center p-6 relative font-sans">
+            <div className="max-w-[480px] w-full bg-white rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.05)] border border-gray-100 p-8 md:p-12 relative z-10 transition-all duration-300">
+                <div className="text-center mb-10">
+                    <h1 className="text-2xl font-black text-gray-900 uppercase tracking-tight mb-2">Create Account</h1>
+                    <p className="text-gray-400 text-[11px] font-bold uppercase tracking-widest">Join Mind Gym Book Community</p>
                 </div>
 
                 {error && (
@@ -172,65 +150,62 @@ const RegisterPage = () => {
                 )}
 
                 <form className="space-y-4" onSubmit={handleRegister}>
-                    {/* Profile Image Upload */}
-                    <div className="flex flex-col items-center mb-4">
+                    <div className="flex flex-col items-center mb-8">
                         <div className="relative group">
-                            <div className="w-24 h-24 rounded-full border-4 border-[#FDFBF7] shadow-lg overflow-hidden bg-gray-50 flex items-center justify-center">
+                            <div className="w-24 h-24 rounded-full border-4 border-white shadow-xl overflow-hidden bg-gray-100 flex items-center justify-center transition-transform duration-300 group-hover:scale-105">
                                 {preview ? (
                                     <img src={preview} alt="Preview" className="w-full h-full object-cover" />
                                 ) : (
-                                    <User size={40} className="text-secondary/20" />
+                                    <User size={36} className="text-gray-200" />
                                 )}
                             </div>
-                            <label className="absolute bottom-0 right-0 bg-[#D76B52] p-2 rounded-full cursor-pointer shadow-lg hover:scale-110 transition-transform">
-                                <Camera size={16} className="text-white" />
+                            <label className="absolute bottom-0 right-0 bg-[#F7941E] p-2.5 rounded-full cursor-pointer shadow-lg hover:scale-110 transition-all border-2 border-white">
+                                <Camera size={14} className="text-white" />
                                 <input type="file" name="profile_image" className="hidden" accept="image/*" onChange={handleChange} />
                             </label>
                         </div>
-                        <span className="text-[10px] font-black text-secondary/40 uppercase tracking-widest mt-2">Upload Profile</span>
+                        <span className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mt-3">Upload Profile</span>
                     </div>
 
-                    {/* Full Name */}
                     <div className="space-y-1.5">
-                        <label className="text-[10px] font-black text-[#2D3E50] uppercase tracking-widest pl-1">Full Name</label>
+                        <label className="text-[10px] font-black text-gray-900 uppercase tracking-[0.15em] pl-1">Full Name</label>
                         <div className="relative group">
-                            <span className="absolute left-5 top-1/2 -translate-y-1/2 text-secondary/30 transition-colors group-focus-within:text-[#D76B52]">
-                                <User size={18} />
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 transition-colors group-focus-within:text-[#F7941E]">
+                                <User size={16} className="text-[#F7941E]"/>
                             </span>
                             <input
                                 type="text"
                                 name="name"
                                 value={formData.name}
-                                placeholder="John Doe"
-                                className="w-full h-12 bg-[#FDFBF7] border border-secondary/10 rounded-2xl pl-14 pr-6 font-sans font-bold text-secondary text-sm outline-none transition-all focus:border-[#D76B52]/40 focus:bg-white focus:shadow-xl focus:shadow-[#D76B52]/5"
+                                placeholder="Full Name"
+                                className="w-full h-12 bg-gray-50/50 border border-gray-100 rounded-xl pl-12 pr-6 font-sans font-bold text-gray-900 text-sm outline-none transition-all focus:border-[#F7941E]/40 focus:bg-white focus:shadow-lg focus:shadow-[#F7941E]/5"
                                 onChange={handleChange}
                                 required
                             />
                         </div>
                     </div>
 
-                    {/* Email */}
                     <div className="space-y-1.5">
-                        <label className="text-[10px] font-black text-[#2D3E50] uppercase tracking-widest pl-1">Email Address</label>
-                        <div className="relative group flex gap-3">
+                        <label className="text-[10px] font-black text-gray-900 uppercase tracking-[0.15em] pl-1">Email Address</label>
+                        <div className="relative group flex gap-2">
                             <div className="relative flex-1">
-                                <span className="absolute left-5 top-1/2 -translate-y-1/2 text-secondary/30 transition-colors group-focus-within:text-[#D76B52]">
-                                    <Mail size={18} />
+                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 transition-colors group-focus-within:text-[#F7941E]">
+                                    <Mail size={16} className="text-[#F7941E]"/>
                                 </span>
                                 <input
                                     type="email"
                                     name="email"
                                     value={formData.email}
-                                    placeholder="name@domain.com"
-                                    className={`w-full h-12 bg-[#FDFBF7] border border-secondary/10 rounded-2xl pl-14 pr-6 font-sans font-bold text-secondary text-sm outline-none transition-all focus:border-[#D76B52]/40 focus:bg-white focus:shadow-xl focus:shadow-[#D76B52]/5 ${emailVerified ? "border-green-500/50 bg-green-50/10" : ""}`}
+                                    placeholder="Email Address"
+                                    className={`w-full h-12 bg-gray-50/50 border border-gray-100 rounded-xl pl-12 pr-6 font-sans font-bold text-gray-900 text-sm outline-none transition-all focus:border-[#F7941E]/40 focus:bg-white focus:shadow-lg focus:shadow-[#F7941E]/5 ${emailVerified ? "border-green-500/50 bg-green-50/10" : ""}`}
                                     onChange={handleChange}
                                     disabled={otpSent || emailVerified}
                                     required
                                 />
                                 {emailVerified && (
                                     <span className="absolute right-4 top-1/2 -translate-y-1/2 text-green-500 flex items-center gap-1.5">
-                                        <ShieldCheck size={18} />
-                                        <span className="text-[10px] font-black uppercase tracking-tighter">Verified</span>
+                                        <ShieldCheck size={16} />
+                                        <span className="text-[9px] font-bold uppercase">Verified</span>
                                     </span>
                                 )}
                             </div>
@@ -240,7 +215,7 @@ const RegisterPage = () => {
                                     type="button"
                                     onClick={handleSendOtp}
                                     disabled={otpLoading || !formData.email}
-                                    className="h-12 px-6 bg-[#2D3E50] text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-secondary transition-all disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                                    className="h-12 px-6 bg-gray-900 text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-[#F7941E] transition-all disabled:cursor-not-allowed whitespace-nowrap"
                                 >
                                     {otpLoading ? <Loader2 size={16} className="animate-spin" /> : "Send OTP"}
                                 </button>
@@ -251,17 +226,17 @@ const RegisterPage = () => {
                     {/* OTP Input - Visible after OTP is sent */}
                     {otpSent && !emailVerified && (
                         <div className="space-y-1.5 animate-in fade-in slide-in-from-top-2 duration-500">
-                            <label className="text-[10px] font-black text-[#D76B52] uppercase tracking-widest pl-1">Enter Verification Code</label>
-                            <div className="relative group flex gap-3">
+                            <label className="text-[10px] font-black text-[#F7941E] uppercase tracking-[0.15em] pl-1">Verification Code</label>
+                            <div className="relative group flex gap-2">
                                 <div className="relative flex-1">
-                                    <span className="absolute left-5 top-1/2 -translate-y-1/2 text-secondary/30 transition-colors group-focus-within:text-[#D76B52]">
-                                        <ShieldCheck size={18} />
+                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 transition-colors group-focus-within:text-[#F7941E]">
+                                        <ShieldCheck size={16} />
                                     </span>
                                     <input
                                         type="text"
-                                        placeholder="••••••"
+                                        placeholder="OTP"
                                         maxLength={6}
-                                        className="w-full h-12 bg-[#FDFBF7] border border-secondary/10 rounded-2xl pl-14 pr-6 font-sans font-bold text-secondary text-lg tracking-[0.5em] outline-none transition-all focus:border-[#D76B52]/40 focus:bg-white focus:shadow-xl focus:shadow-[#D76B52]/5"
+                                        className="w-full h-12 bg-gray-50/50 border border-gray-100 rounded-xl pl-12 pr-6 font-sans font-bold text-gray-900 text-sm tracking-[0.3em] outline-none transition-all focus:border-[#F7941E]/40 focus:bg-white focus:shadow-lg focus:shadow-[#F7941E]/5"
                                         value={otp}
                                         onChange={(e) => setOtp(e.target.value)}
                                     />
@@ -270,32 +245,32 @@ const RegisterPage = () => {
                                     type="button"
                                     onClick={handleVerifyEmail}
                                     disabled={verifyLoading || otp.length < 4}
-                                    className="h-12 px-8 bg-[#D76B52] text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-red-950 transition-all shadow-lg shadow-[#D76B52]/20 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                                    className="h-12 px-6 bg-gray-900 text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-[#F7941E] transition-all disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                                 >
                                     {verifyLoading ? <Loader2 size={16} className="animate-spin" /> : "Verify"}
                                 </button>
                             </div>
                             <div className="flex justify-between items-center px-1">
-                                <p className="text-[9px] text-secondary/40 font-bold uppercase tracking-widest">Didn't receive code?</p>
-                                <button type="button" onClick={handleSendOtp} className="text-[9px] text-[#D76B52] font-black uppercase tracking-widest hover:underline">Resend OTP</button>
+                                <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">Didn't receive code?</p>
+                                <button type="button" onClick={handleSendOtp} className="text-[9px] text-[#F7941E] font-black uppercase tracking-widest hover:underline">Resend OTP</button>
                             </div>
                         </div>
                     )}
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         {/* Phone */}
                         <div className="space-y-1.5">
-                            <label className="text-[10px] font-black text-[#2D3E50] uppercase tracking-widest pl-1">Phone</label>
+                            <label className="text-[10px] font-black text-gray-900 uppercase tracking-[0.15em] pl-1">Phone</label>
                             <div className="relative group">
-                                <span className="absolute left-5 top-1/2 -translate-y-1/2 text-secondary/30 transition-colors group-focus-within:text-[#D76B52]">
-                                    <Phone size={18} />
+                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 transition-colors group-focus-within:text-[#F7941E]">
+                                    <Phone size={16} className="text-[#F7941E]"/>
                                 </span>
                                 <input
                                     type="tel"
                                     name="phone"
                                     value={formData.phone}
                                     placeholder="Phone"
-                                    className="w-full h-12 bg-[#FDFBF7] border border-secondary/10 rounded-2xl pl-14 pr-4 font-sans font-bold text-secondary text-xs outline-none transition-all focus:border-[#D76B52]/40 focus:bg-white focus:shadow-xl focus:shadow-[#D76B52]/5"
+                                    className="w-full h-12 bg-gray-50/50 border border-gray-100 rounded-xl pl-12 pr-4 font-sans font-bold text-gray-900 text-xs outline-none transition-all focus:border-[#F7941E]/40 focus:bg-white focus:shadow-lg focus:shadow-[#F7941E]/5"
                                     onChange={handleChange}
                                 />
                             </div>
@@ -303,17 +278,17 @@ const RegisterPage = () => {
 
                         {/* Additional Phone */}
                         <div className="space-y-1.5">
-                            <label className="text-[10px] font-black text-[#2D3E50] uppercase tracking-widest pl-1">Alt Phone</label>
+                            <label className="text-[10px] font-black text-gray-900 uppercase tracking-[0.15em] pl-1">Alt Phone</label>
                             <div className="relative group">
-                                <span className="absolute left-5 top-1/2 -translate-y-1/2 text-secondary/30 transition-colors group-focus-within:text-[#D76B52]">
-                                    <Phone size={18} />
+                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 transition-colors group-focus-within:text-[#F7941E]">
+                                    <Phone size={16} className="text-[#F7941E]"/>
                                 </span>
                                 <input
                                     type="tel"
                                     name="additional_phone"
                                     value={formData.additional_phone}
                                     placeholder="Optional"
-                                    className="w-full h-12 bg-[#FDFBF7] border border-secondary/10 rounded-2xl pl-14 pr-4 font-sans font-bold text-secondary text-xs outline-none transition-all focus:border-[#D76B52]/40 focus:bg-white focus:shadow-xl focus:shadow-[#D76B52]/5"
+                                    className="w-full h-12 bg-gray-50/50 border border-gray-100 rounded-xl pl-12 pr-4 font-sans font-bold text-gray-900 text-xs outline-none transition-all focus:border-[#F7941E]/40 focus:bg-white focus:shadow-lg focus:shadow-[#F7941E]/5"
                                     onChange={handleChange}
                                 />
                             </div>
@@ -322,26 +297,26 @@ const RegisterPage = () => {
 
                     {/* Password */}
                     <div className="space-y-1.5">
-                        <label className="text-[10px] font-black text-[#2D3E50] uppercase tracking-widest pl-1">Password</label>
+                        <label className="text-[10px] font-black text-gray-900 uppercase tracking-[0.15em] pl-1">Password</label>
                         <div className="relative group">
-                            <span className="absolute left-5 top-1/2 -translate-y-1/2 text-secondary/30 transition-colors group-focus-within:text-[#D76B52]">
-                                <Lock size={18} />
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 transition-colors group-focus-within:text-[#F7941E]">
+                                <Lock size={16} className="text-[#F7941E]"/>
                             </span>
                             <input
                                 type={showPassword ? "text" : "password"}
                                 name="password"
                                 value={formData.password}
-                                placeholder="••••••••••••"
-                                className="w-full h-12 bg-[#FDFBF7] border border-secondary/10 rounded-2xl pl-14 pr-14 font-sans font-bold text-secondary text-sm outline-none transition-all focus:border-[#D76B52]/40 focus:bg-white focus:shadow-xl focus:shadow-[#D76B52]/5"
+                                placeholder="••••••••"
+                                className="w-full h-12 bg-gray-50/50 border border-gray-100 rounded-xl pl-12 pr-14 font-sans font-bold text-gray-900 text-sm outline-none transition-all focus:border-[#F7941E]/40 focus:bg-white focus:shadow-lg focus:shadow-[#F7941E]/5"
                                 onChange={handleChange}
                                 required
                             />
                             <button
                                 type="button"
                                 onClick={() => setShowPassword(!showPassword)}
-                                className="absolute right-5 top-1/2 -translate-y-1/2 text-secondary/30 hover:text-secondary transition-colors"
+                                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-600 transition-colors"
                             >
-                                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                             </button>
                         </div>
                     </div>
@@ -350,16 +325,16 @@ const RegisterPage = () => {
                     <button
                         type="submit"
                         disabled={loading || !emailVerified}
-                        className="w-full h-14 bg-[#D76B52] text-white rounded-2xl font-sans font-black uppercase tracking-widest shadow-xl shadow-[#D76B52]/20 hover:bg-red-950 transition-all duration-500 flex items-center justify-center gap-3 group mt-4 disabled:opacity-50 disabled:cursor-not-allowed disabled:saturate-50"
+                        className="w-full h-12 bg-gray-900 text-white rounded-xl font-sans font-black uppercase tracking-widest shadow-lg shadow-gray-200 hover:bg-[#F7941E] hover:text-black transition-all duration-300 flex items-center justify-center gap-2 mt-4 disabled:cursor-not-allowed"
                     >
-                        {loading ? "Creating Account..." : "Create Account"} <ArrowRight className="group-hover:translate-x-1 transition-transform" size={18} />
+                        {loading ? "Creating Account..." : "Create Account"} <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
                     </button>
                 </form>
 
-                <div className="mt-8 text-center border-t border-secondary/5 pt-6">
-                    <p className="text-secondary/40 text-xs font-sans font-bold">
+                <div className="mt-8 text-center border-t border-gray-50 pt-6">
+                    <p className="text-gray-400 text-xs font-sans font-bold">
                         Already have an account?
-                        <Link href="/login" className="ml-2 text-[#D76B52] font-black uppercase tracking-widest hover:underline">
+                        <Link href="/login" className="ml-1 text-[#F7941E] font-black uppercase tracking-widest hover:underline">
                             Sign In
                         </Link>
                     </p>

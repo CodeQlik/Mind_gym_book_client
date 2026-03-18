@@ -7,11 +7,31 @@ import Image from "next/image";
 import Link from "next/link";
 import { Star, Heart, ShoppingBag } from "lucide-react";
 
+const getBookImageUrl = (book) => {
+    const fallback = "https://images.unsplash.com/photo-1543005128-d39eef080c98?q=80&w=400&auto=format&fit=crop";
+    if (!book) return fallback;
+
+    // Handle various field formats (thumbnail object, image string, cover_image object)
+    let url = "";
+    if (book.thumbnail?.url) url = book.thumbnail.url;
+    else if (book.cover_image?.url) url = book.cover_image.url;
+    else if (typeof book.image === 'string') url = book.image;
+    else if (typeof book.thumbnail === 'string') url = book.thumbnail;
+
+    if (!url || typeof url !== 'string') return fallback;
+    if (url.startsWith('http')) return url;
+
+    // Prefix relative path
+    const baseUrl = (process.env.NEXT_PUBLIC_API_URL || '').split('/api/v1')[0] || '';
+    if (baseUrl && url.startsWith('/')) return `${baseUrl}${url}`;
+
+    return url;
+};
+
 export default function BookGrid() {
     const dispatch = useDispatch();
     const [books, setBooks] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
 
     const handleToggleWishlist = async (bookId) => {
         try {
@@ -31,29 +51,44 @@ export default function BookGrid() {
             try {
                 const response = await api.get("/book/all");
                 if (response.data.success) {
-                    const data = response.data.data || {};
+                    const booksData = response.data.data;
                     let allBooks = [];
-                    const booksSource = data.books || data;
-                    
-                    if (Array.isArray(booksSource)) {
-                        allBooks = booksSource;
-                    } else if (booksSource && typeof booksSource === 'object') {
-                        allBooks = Object.values(booksSource).flat().filter(book => book !== null && typeof book === 'object');
+
+                    if (Array.isArray(booksData)) {
+                        allBooks = booksData;
+                    } else if (booksData?.books) {
+                        if (Array.isArray(booksData.books)) {
+                            allBooks = booksData.books;
+                        } else if (typeof booksData.books === 'object') {
+                            allBooks = Object.values(booksData.books).flat();
+                        }
+                    } else if (booksData?.categories && Array.isArray(booksData.categories)) {
+                        allBooks = booksData.categories.flatMap(cat => cat.books || []);
                     }
 
-                    let premiumBooks = allBooks
-                        .filter(book => book.is_premium === true || book.is_premium === 1 || book.is_premium === "1");
-                    
-                    // Fallback: If no books are marked as premium, just show the first few
+                    // CRITICAL: Filter out any objects that are not valid books (must have id and title)
+                    allBooks = allBooks.filter(item =>
+                        item &&
+                        typeof item === 'object' &&
+                        (item.id || item._id) &&
+                        item.title &&
+                        item.title.trim().length > 0
+                    );
+
+                    let premiumBooks = allBooks.filter(book =>
+                        book.is_premium === true ||
+                        book.is_premium === 1 ||
+                        book.is_premium === "1"
+                    );
+
                     if (premiumBooks.length === 0) {
-                        premiumBooks = allBooks;
+                        premiumBooks = allBooks.slice(0, 4);
                     }
 
-                    setBooks(premiumBooks.slice(0, 4)); // Display exactly 4 books
+                    setBooks(premiumBooks);
                 }
-            } catch (err) {
-                console.error("Error fetching books:", err);
-                setError("Failed to load books. Please try again later.");
+            } catch (error) {
+                console.error("Error fetching books:", error);
             } finally {
                 setLoading(false);
             }
@@ -62,108 +97,120 @@ export default function BookGrid() {
         fetchBooks();
     }, []);
 
-    const getFormattedBadge = (index) => {
-        const badges = ["Limited Edition", "Exclusive", "Premium", "New Arrival"];
-        return badges[index % badges.length];
-    };
-
-    if (loading) {
-        return (
-            <section className="py-20 bg-white">
-                <div className="max-w-7xl mx-auto px-6 text-center">
-                    <div className="w-12 h-12 border-4 border-[#F7941E] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                    <p className="text-gray-400 font-bold animate-pulse">Loading Exclusive Collection...</p>
-                </div>
-            </section>
-        );
-    }
+    if (loading) return (
+        <div className="py-20 text-center bg-white">
+            <div className="w-12 h-12 border-4 border-[#F7941E] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-gray-400 font-bold animate-pulse">Loading Books...</p>
+        </div>
+    );
 
     return (
-        <section className="py-24 bg-white">
-            <div className="max-w-6xl mx-auto px-6 md:px-12">
+        <section className="py-24 bg-white relative overflow-hidden">
+            {/* Background Decorative Elements */}
+            <div className="absolute top-0 right-0 w-1/3 h-1/3 bg-gray-50 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+            <div className="absolute bottom-0 left-0 w-1/4 h-1/4 bg-[#F7941E]/5 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
 
-                {/* Header Section */}
-                <div className="flex flex-col items-center text-center mb-16">
-                    <div className="bg-[#FFF8E7] px-6 py-1.5 rounded-full mb-6">
-                        <span className="text-[11px] font-bold uppercase tracking-[0.25em] text-[#C48C3D]">
-                            Premium Selection
-                        </span>
+            <div className="max-w-[1440px] mx-auto px-6 md:px-12 relative z-10">
+                {/* Header Section - Centered matched to Screenshot */}
+                <div className="flex flex-col items-center text-center mb-10 md:mb-16 px-4">
+                    <div className="inline-flex items-center gap-2 bg-[#F7941E]/10 px-5 py-1.5 rounded-full mb-4 md:mb-6">
+                        <span className="text-[9px] font-black uppercase tracking-[0.2em] text-[#F7941E]">Premium Selection</span>
                     </div>
-                    <h2 className="text-4xl md:text-5xl font-serif font-black text-secondary mb-5 tracking-tight">
+                    <h2 className="text-3xl md:text-5xl font-serif font-bold text-secondary mb-4 leading-tight max-w-4xl">
                         Exclusive Premium Books
                     </h2>
-                    <p className="max-w-2xl text-gray-400 font-medium leading-relaxed text-base">
+                    <p className="max-w-2xl text-gray-500 font-medium text-sm md:text-base leading-relaxed">
                         Handpicked rare editions and exclusive releases from the world's most celebrated authors.
                     </p>
                 </div>
 
-                {/* Grid Section - 4 Columns matching the image precisely */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
-                    {books.map((book, index) => (
-                        <div
-                            key={book.id}
-                            className="bg-white rounded-[1rem] border border-gray-100 shadow-md transition-all duration-700 hover:shadow-2xl hover:shadow-gray-200/50 hover:-translate-y-3 group overflow-hidden"
-                        >
-                            {/* Image Container - Square Aspect */}
-                            <div className="relative aspect-square w-full overflow-hidden">
-                                <Image
-                                    src={book.thumbnail?.url || book.image || "/placeholder-book.jpg"}
-                                    alt={book.title}
-                                    fill
-                                    className="object-cover transform group-hover:scale-110 transition-transform duration-1000 ease-out"
-                                />
-                                <button
-                                    onClick={() => handleToggleWishlist(book.id)}
-                                    className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/95 backdrop-blur-sm flex items-center justify-center transition-all duration-200 opacity-0 group-hover:opacity-100 hover:scale-110 z-10 shadow-sm"
-                                >
-                                    <Heart size={14} className={book.isBookmarked ? "fill-red-500 text-red-500" : "text-gray-400 group-hover:text-red-500"} />
-                                </button>
-                            </div>
+                {/* Centered Cards Container */}
+                <div className="flex flex-wrap justify-center gap-6 md:gap-8 px-4">
+                    {books.map((book, index) => {
+                        // Badge logic to match screenshot diversity
+                        const badges = ["LIMITED EDITION", "EXCLUSIVE", "PREMIUM", "NEW ARRIVAL"];
+                        const badgeText = badges[index % badges.length];
 
-                            {/* Content Section - Balanced Padding */}
-                            <div className="p-5 md:p-2">
-                                {/* Rating and Score */}
-                                <div className="flex items-center gap-2 mb-2">
-                                    <div className="flex items-center">
-                                        {[...Array(5)].map((_, i) => {
-                                            const rating = book.average_rating || book.rating || 5;
-                                            return (
-                                                <Star
-                                                    key={i}
-                                                    size={11}
-                                                    fill={i < Math.floor(rating) ? "#F7941E" : "none"}
-                                                    stroke="#F7941E"
-                                                    className={i >= Math.floor(rating) ? "opacity-30" : ""}
-                                                />
-                                            );
-                                        })}
-                                    </div>
-                                    <span className="text-[10px] font-bold text-gray-300 font-sans tracking-tight mt-0.5">({book.reviews_count || book.total_reviews || 0})</span>
-                                </div>
+                        return (
+                            <div
+                                key={book.id || `grid-${index}`}
+                                className="group bg-white rounded-2xl shadow-[0_20px_50px_rgba(18,18,18,0.05)] border border-gray-100/50 transition-all duration-500 hover:shadow-[0_30px_60px_rgba(18,18,18,0.08)] hover:-translate-y-2 flex flex-col w-full max-w-[320px] sm:max-w-[220px] md:max-w-[270px] overflow-hidden"
+                            >
+                                {/* Image Container - Full Width */}
+                                <div className="relative aspect-square w-full overflow-hidden">
+                                    <Image
+                                        src={getBookImageUrl(book)}
+                                        alt={book.title}
+                                        fill
+                                        className="object-cover transform group-hover:scale-110 transition-transform duration-1000 ease-out"
+                                        priority={index < 4}
+                                    />
 
-                                {/* Title & Author */}
-                                <h3 className="text-[17px] font-black text-secondary mb-1 line-clamp-1 group-hover:text-primary transition-colors duration-300">
-                                    {book.title}
-                                </h3>
-                                <p className="text-[12px] font-semibold text-gray-400 mb-4 line-clamp-1">
-                                    by <span className="text-gray-500">{book.author_name || book.author || "Mind Gym Author"}</span>
-                                </p>
-
-                                {/* Price and Action link */}
-                                <div className="flex items-center justify-between pt-3 border-t border-gray-50">
-                                    <p className="text-xl font-black text-secondary">
-                                        ₹{(parseFloat(book.price) || 0).toLocaleString()}
-                                    </p>
-                                    <Link
-                                        href={`/books/${book.slug || book.id}`}
-                                        className="text-[12px] font-bold text-[#C48C3D] hover:text-[#9A6D2F] transition-colors tracking-tight"
+                                    <button
+                                        onClick={() => handleToggleWishlist(book.id)}
+                                        className="absolute top-4 right-4 w-7 h-7 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center transition-all duration-200 opacity-0 group-hover:opacity-100 hover:scale-110 z-10 shadow-md"
                                     >
-                                        View Details
-                                    </Link>
+                                        <Heart size={12} className={book.isBookmarked ? "fill-red-500 text-red-500" : "text-gray-400 group-hover:text-red-500"} />
+                                    </button>
+
+                                    <div className="absolute top-4 left-4 flex flex-col gap-1.5 z-20">
+                                        {(book.is_bestseller || book.is_bestselling) && (
+                                            <span className="bg-[#F7941E] text-white text-[9px] font-black uppercase px-2.5 py-1 rounded-md shadow-md">Bestseller</span>
+                                        )}
+                                        {book.is_premium && (
+                                            <span className="bg-[#1A1A1A] text-white text-[9px] font-black uppercase px-2.5 py-1 rounded-md shadow-md">Premium</span>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Content Section - Padded */}
+                                <div className="p-4 md:p-5 flex flex-col flex-1 text-left items-start">
+                                    <div className="flex items-center gap-1.5 mb-2 md:mb-3">
+                                        <div className="flex items-center gap-0.5">
+                                            {[...Array(5)].map((_, i) => {
+                                                const rating = Number(book.average_rating || book.rating || 0);
+                                                return (
+                                                    <Star
+                                                        key={i}
+                                                        size={10}
+                                                        fill={i < Math.floor(rating) ? "#F7941E" : "none"}
+                                                        stroke={i < Math.floor(rating) ? "#F7941E" : "#E5E7EB"}
+                                                        className={i >= Math.floor(rating) ? "opacity-30" : "text-[#F7941E]"}
+                                                    />
+                                                );
+                                            })}
+                                        </div>
+                                        {(book.average_rating || book.rating) && (
+                                            <span className="text-[9px] font-bold text-gray-300 mt-0.5">
+                                                ({Number(book.average_rating || book.rating).toFixed(1)})
+                                            </span>
+                                        )}
+                                    </div>
+
+                                    {/* Title & Author */}
+                                    <h3 className="text-xs md:text-base font-bold text-secondary mb-0.5 line-clamp-1 leading-tight group-hover:text-[#F7941E] transition-colors duration-300">
+                                        {book.title}
+                                    </h3>
+                                    <p className="text-[9px] md:text-[12px] font-medium text-gray-400 mb-4 md:mb-6 line-clamp-1">
+                                        by <span className="text-gray-500">{book.author_name || book.author || "Mind Gym Author"}</span>
+                                    </p>
+
+                                    {/* Price and Details Row */}
+                                    <div className="flex items-center justify-between mt-auto w-full">
+                                        <p className="text-base md:text-xl font-bold text-secondary">
+                                            ₹{(parseFloat(book.price) || 0).toLocaleString()}
+                                        </p>
+                                        <Link
+                                            href={`/books/${book.slug || book.id}`}
+                                            className="text-[9px] md:text-[11px] font-bold text-[#C48C3D] hover:text-[#9A6D2F] transition-all"
+                                        >
+                                            View Details
+                                        </Link>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
             </div>
         </section>

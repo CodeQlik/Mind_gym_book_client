@@ -83,13 +83,39 @@ const AboutClient = () => {
                     </div>
                 </div>
 
-                {/* How It All Started Section - Full Width Background */}
-                <section className="bg-gray-100 py-20 md:py-24">
-                    <div className="max-w-7xl mx-auto px-6 md:px-12 flex flex-col-reverse lg:flex-row items-center gap-12 lg:gap-20">
-                        {/* Left: Overlapping Images */}
-                        <div className="flex-1 relative w-full h-[350px] md:h-[420px] mt-10">
-                            {/* Image 1: Stacked Books (Back) */}
-                            <div className="absolute top-0 left-0 w-3/5 md:w-2/3 aspect-[3/4] rounded-[24px] overflow-hidden shadow-2xl z-10 transform -rotate-3 hover:rotate-0 transition-transform duration-500">
+                {/* How It All Started Section - Redesigned for Mobile & Desktop */}
+                <section className="bg-gray-50 py-16 md:py-24 overflow-hidden">
+                    <div className="max-w-7xl mx-auto px-6 md:px-12 flex flex-col lg:flex-row items-center gap-20">
+                        
+                        {/* 1. History Text Section */}
+                        <div className="w-full lg:w-1/2 space-y-8 text-center lg:text-left">
+                            <div className="space-y-4">
+                                <span className="inline-block px-4 py-1.5 rounded-full border border-primary/20 bg-primary/5 text-[10px] font-black uppercase tracking-[0.2em] text-primary">
+                                    Our Legacy
+                                </span>
+                                <h2 className="text-4xl md:text-5xl font-black text-secondary tracking-tight leading-tight">
+                                    How It <span className="text-primary italic serif-font">All Started</span>
+                                </h2>
+                                <div className="w-20 h-1.5 bg-primary rounded-full mx-auto lg:mx-0" />
+                            </div>
+
+                            <div className="space-y-6 text-gray-600 text-base md:text-lg leading-relaxed font-medium">
+                                <p>
+                                    Mind Gym Book began as a humble initiative with a simple yet powerful mission: to bring the joy of reading to every curious mind. Our journey started with a carefully curated selection of books, driven by the belief that a great book is more than just paper and ink—it's a gateway to new perspectives and endless wisdom.
+                                </p>
+                                <p>
+                                    Today, we have evolved into a premier destination for book lovers worldwide. While our reach has grown, our heart remains the same: we are dedicated to connecting readers with the stories and knowledge that inspire, educate, and transform lives. At Mind Gym, we don't just provide books; we nurture the intellectual and emotional growth of our community.
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* 2. Overlapping Images Section - Fixed for Mobile */}
+                        <div className="w-full lg:w-1/2 relative h-[450px] md:h-[550px] mt-12 lg:mt-0 flex items-center justify-center lg:block">
+                            {/* Decorative Blur Background */}
+                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-primary/5 rounded-full blur-[100px] -z-10" />
+
+                            {/* Image 1: Back Image */}
+                            <div className="absolute top-0 left-4 md:left-10 w-[60%] lg:w-[65%] aspect-[3/4] rounded-[40px] overflow-hidden shadow-2xl z-10 transform -rotate-6 hover:rotate-0 transition-all duration-700 border-4 border-white/50">
                                 <Image
                                     src="/images/about_history_1.png"
                                     alt="Vintage Stacked Books"
@@ -97,33 +123,15 @@ const AboutClient = () => {
                                     className="object-cover"
                                 />
                             </div>
-                            {/* Image 2: Open Book (Front) */}
-                            <div className="absolute bottom-0 right-0 w-3/5 md:w-2/3 aspect-[3/4] rounded-[24px] overflow-hidden shadow-2xl z-20 transform translate-y-6 md:translate-y-8 rotate-2 hover:rotate-0 transition-transform duration-500 border-4 border-white">
+
+                            {/* Image 2: Front Image */}
+                            <div className="absolute bottom-4 right-4 md:right-10 w-[60%] lg:w-[65%] aspect-[3/4] rounded-[40px] overflow-hidden shadow-[0_40px_80px_-15px_rgba(0,0,0,0.4)] z-20 transform translate-y-6 rotate-3 hover:rotate-0 transition-all duration-700 border-[8px] md:border-[12px] border-white">
                                 <Image
                                     src="/images/about_history_2.png"
                                     alt="Open Book on Table"
                                     fill
                                     className="object-cover"
                                 />
-                            </div>
-                        </div>
-
-                        {/* Right: History Text */}
-                        <div className="flex-1 space-y-6">
-                            <div className="space-y-3">
-                                <h2 className="text-3xl md:text-4xl font-black text-[#000000] tracking-tight">
-                                    How It All Started
-                                </h2>
-                                <div className="w-16 h-1.5 bg-[#000000] rounded-full" />
-                            </div>
-
-                            <div className="space-y-4 text-[#666666] text-base leading-relaxed font-medium">
-                                <p>
-                                    Lumina Books began in 2012 as a small corner shop with a single shelf of hand-picked classics. Our founder, Eleanor Vance, believed that in a world turning increasingly digital, the physical touch of paper and the smell of ink held a magic that could never be replaced.
-                                </p>
-                                <p>
-                                    Over a decade later, we've grown into a digital destination for bibliophiles worldwide, but our core philosophy remains unchanged: every book we sell is a gateway to a new world. We don't just sell books; we connect souls with the wisdom of the ages.
-                                </p>
                             </div>
                         </div>
                     </div>
@@ -145,45 +153,45 @@ const AboutClient = () => {
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
                             {[
                                 {
-                                    title: "Popular Books",
-                                    desc: "Explore the trending and bestselling titles that are capturing the world's imagination today.",
+                                    title: "Popular Picks",
+                                    desc: "Top trending stories and global bestsellers curated for you.",
                                     icon: <Star />,
                                     delay: "0.1s"
                                 },
                                 {
-                                    title: "New Arrivals",
-                                    desc: "Stay ahead of the curve with our latest books, added regularly across all major genres.",
+                                    title: "Fresh Arrivals",
+                                    desc: "Explore the latest additions to our ever-growing library.",
                                     icon: <Sparkles />,
                                     delay: "0.2s"
                                 },
                                 {
-                                    title: "Different Genres",
-                                    desc: "Fiction, business, self-help, kids, and more. A diverse library curated for every curiosity.",
+                                    title: "Diverse Genres",
+                                    desc: "From fiction to business, find books for every curiosity.",
                                     icon: <BookOpen />,
                                     delay: "0.3s"
                                 },
                                 {
-                                    title: "Top Rated Books",
-                                    desc: "Discover titles loved and highly recommended by our passionate community of readers.",
+                                    title: "Highest Rated",
+                                    desc: "Exceptional titles highly recommended by our readers.",
                                     icon: <Award />,
                                     delay: "0.4s"
                                 }
                             ].map((item, i) => (
                                 <div
                                     key={i}
-                                    className="bg-white p-8 md:p-10 rounded-[32px] border border-black/5 shadow-sm hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 group animate-slide-down text-center"
+                                    className="bg-white p-8 md:p-10 rounded-[32px] border border-black/5 shadow-sm hover:shadow-2xl hover:shadow-primary/5 transition-all duration-500 hover:-translate-y-2 group animate-slide-down text-center"
                                     style={{ animationDelay: item.delay }}
                                 >
-                                    <div className="w-14 h-14 bg-[#F7941E]/10 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:bg-[#F7941E] group-hover:text-white transition-colors duration-500">
+                                    <div className="w-16 h-16 bg-[#F7941E]/5 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:bg-[#F7941E] group-hover:rotate-6 transition-all duration-500">
                                         {React.cloneElement(item.icon, {
                                             className: "text-[#F7941E] group-hover:text-white transition-colors duration-500",
-                                            size: 26
+                                            size: 28
                                         })}
                                     </div>
-                                    <h3 className="text-xl font-black text-[#000000] mb-4 tracking-tight">
+                                    <h3 className="text-xl font-black text-[#000000] mb-3 tracking-tight">
                                         {item.title}
                                     </h3>
-                                    <p className="text-sm text-[#666666] leading-relaxed font-medium">
+                                    <p className="text-[14px] text-[#666666] leading-relaxed font-medium">
                                         {item.desc}
                                     </p>
                                 </div>

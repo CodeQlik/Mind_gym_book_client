@@ -22,7 +22,7 @@ const Features = () => {
                     const data = response.data.data || {};
                     let allBooks = [];
                     const booksSource = data.books || data;
-                    
+
                     if (Array.isArray(booksSource)) {
                         allBooks = booksSource;
                     } else if (booksSource && typeof booksSource === 'object') {
@@ -97,30 +97,23 @@ const Features = () => {
                                     fill
                                     className="object-cover transform group-hover:scale-110 transition-transform duration-1000"
                                 />
+
+                                <div className="absolute top-2 left-2 flex flex-col gap-1 z-20">
+                                    {(book.is_bestseller || book.is_bestselling) && (
+                                        <span className="bg-[#F7941E] text-white text-[7px] font-black uppercase px-1.5 py-0.5 rounded shadow-sm">Bestseller</span>
+                                    )}
+                                    {book.is_premium && (
+                                        <span className="bg-black text-white text-[7px] font-black uppercase px-1.5 py-0.5 rounded shadow-sm">Premium</span>
+                                    )}
+                                </div>
+
                                 {/* Bottom Inner Shadow for text contrast if needed */}
                                 <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                             </div>
 
                             {/* Book Details Container */}
                             <div className="px-1 flex-1 flex flex-col">
-                                {/* Rating Stars (Randomized for mockup fidelity) */}
-                                <div className="flex items-center gap-1 mb-3">
-                                    <div className="flex items-center">
-                                        {[...Array(5)].map((_, i) => {
-                                            const rating = book.average_rating || book.rating || 5;
-                                            return (
-                                                <Star
-                                                    key={i}
-                                                    size={10}
-                                                    className={`${i < Math.floor(rating) ? "fill-[#F7941E] text-[#F7941E]" : "fill-gray-200 text-gray-200"}`}
-                                                />
-                                            );
-                                        })}
-                                    </div>
-                                    <span className="text-[10px] font-bold text-gray-400 mt-0.5">
-                                        ({book.reviews_count || book.total_reviews || 0})
-                                    </span>
-                                </div>
+
 
                                 {/* Title & Author */}
                                 <h3 className="text-[15px] font-bold text-secondary leading-tight line-clamp-2 mb-2 group-hover:text-[#F7941E] transition-colors">
@@ -133,7 +126,7 @@ const Features = () => {
                                 {/* Bottom Row: Price & Link */}
                                 <div className="mt-auto flex items-center justify-between border-t border-gray-50 pt-1 ">
                                     <span className="text-lg font-bold text-secondary">
-                                        ${book.price || "299.00"}
+                                        ₹{(parseFloat(book.price) || 299).toLocaleString()}
                                     </span>
                                     <Link
                                         href={`/books/${book.id}`}

@@ -40,6 +40,7 @@ export default function OrderDetailsPage({ params }) {
     const [isRefundModalOpen, setIsRefundModalOpen] = useState(false);
     const [refundReason, setRefundReason] = useState("");
     const [isProcessingAction, setIsProcessingAction] = useState(false);
+    const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
 
     const fetchOrderDetails = async () => {
         try {
@@ -70,8 +71,20 @@ export default function OrderDetailsPage({ params }) {
             setIsProcessingAction(true);
             const res = await api.post(`/orders/cancel/${order.id}`);
             if (res.data?.success) {
-                toast.success("Order cancelled successfully");
+                const updatedOrder = res.data.data;
                 setIsCancelModalOpen(false);
+                setOrder(updatedOrder);
+
+                // If it was a prepaid order, inform user that refund is initiated
+                const isPrepaid = String(updatedOrder.payment_method || '').toLowerCase() !== 'cod' || updatedOrder.payment_status === 'paid';
+                
+                if (isPrepaid) {
+                    toast.success("Order cancelled. Refund has been automatically initiated.");
+                    setIsRefundModalOpen(true);
+                } else {
+                    toast.success("Order cancelled successfully");
+                }
+                
                 fetchOrderDetails();
             }
         } catch (error) {
@@ -97,7 +110,15 @@ export default function OrderDetailsPage({ params }) {
             }
         } catch (error) {
             console.error("Refund request failed:", error);
-            toast.error(error.response?.data?.message || "Failed to submit refund request");
+            const errorMsg = error.response?.data?.message || "";
+            if (errorMsg.toLowerCase().includes("already requested")) {
+                toast.success("Refund request is already registered.");
+                setIsRefundModalOpen(false);
+                setRefundReason("");
+                fetchOrderDetails();
+            } else {
+                toast.error(errorMsg || "Failed to submit refund request");
+            }
         } finally {
             setIsProcessingAction(false);
         }
@@ -117,7 +138,17 @@ export default function OrderDetailsPage({ params }) {
             try {
                 const res = await api.get('/book/all?limit=5');
                 if (res.data?.success) {
-                    setRelatedBooks(res.data.data?.books || []);
+                    const data = res.data.data || {};
+                    const booksSource = data.books || data;
+                    let allBooks = [];
+                    
+                    if (Array.isArray(booksSource)) {
+                        allBooks = booksSource;
+                    } else if (booksSource && typeof booksSource === 'object') {
+                        allBooks = Object.values(booksSource).flat().filter(book => book !== null && typeof book === 'object');
+                    }
+                    
+                    setRelatedBooks(allBooks.slice(0, 5));
                 }
             } catch (err) {
                 console.error("Error fetching related books", err);
@@ -237,13 +268,19 @@ export default function OrderDetailsPage({ params }) {
                                 </button>
                             )}
 
-                            {order.delivery_status === 'delivered' && !order.refund_requested && (
-                                <button
-                                    onClick={() => setIsRefundModalOpen(true)}
-                                    className="flex items-center gap-2 px-6 py-3 bg-purple-50 text-purple-600 rounded-xl text-[13px] font-black hover:bg-purple-100 transition-all uppercase tracking-widest active:scale-95"
-                                >
-                                    Request Refund
-                                </button>
+                            {['delivered', 'cancelled'].includes(String(order.delivery_status || '').toLowerCase()) && (
+                                order.refund_requested ? (
+                                    <div className="flex items-center gap-2 px-6 py-3 bg-purple-100 text-purple-700 rounded-xl text-[13px] font-black uppercase tracking-widest shadow-sm">
+                                        <Clock size={16} /> Refund Requested
+                                    </div>
+                                ) : (
+                                    <button
+                                        onClick={() => setIsRefundModalOpen(true)}
+                                        className="flex items-center gap-2 px-6 py-3 bg-purple-50 text-purple-600 border border-purple-100 rounded-xl text-[13px] font-black hover:bg-purple-100 transition-all uppercase tracking-widest active:scale-95 shadow-sm shadow-purple-100/50"
+                                    >
+                                        <RefreshCw size={16} /> {String(order.delivery_status || '').toLowerCase() === 'delivered' ? 'Return Order' : 'Request Refund'}
+                                    </button>
+                                )
                             )}
                         </div>
                     </div>
@@ -357,7 +394,10 @@ export default function OrderDetailsPage({ params }) {
                                     <p className="text-[#999999] text-[14px] font-medium mt-1">Request a return, exchange, or report a missing item.</p>
                                 </div>
                             </div>
-                            <button className="px-6 py-3 bg-[#1A1A1A] text-white rounded-xl text-[13px] font-black uppercase tracking-widest hover:bg-black transition-all flex items-center gap-2 group whitespace-nowrap">
+                            <button 
+                                onClick={() => router.push('/profile?tab=support')}
+                                className="px-6 py-3 bg-[#1A1A1A] text-white rounded-xl text-[13px] font-black uppercase tracking-widest hover:bg-black transition-all flex items-center gap-2 group whitespace-nowrap"
+                            >
                                 Customer Support <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
                             </button>
                         </div>
@@ -464,7 +504,7 @@ export default function OrderDetailsPage({ params }) {
                     </div>
 
                     <div className="grid grid-cols-2 lg:grid-cols-5 gap-8">
-                        {relatedBooks.map((book) => {
+                        {Array.isArray(relatedBooks) && relatedBooks.map((book) => {
                             const thumb = book.thumbnail?.url || (typeof book.thumbnail === 'string' ? (book.thumbnail.startsWith('http') ? book.thumbnail : `${process.env.NEXT_PUBLIC_API_URL}${book.thumbnail}`) : book.image);
                             return (
                                 <div key={book.id} className="group">
@@ -543,9 +583,9 @@ export default function OrderDetailsPage({ params }) {
                         <div className="bg-white w-full max-w-md rounded-[32px] overflow-hidden shadow-2xl relative animate-in fade-in zoom-in duration-300">
                             <div className="p-8 border-b border-gray-100">
                                 <h3 className="font-black text-xl text-[#1A1A1A] flex items-center gap-3">
-                                    <RefreshCw className="text-purple-500" /> Request Refund
+                                    <RefreshCw className="text-purple-500" /> {String(order.delivery_status || '').toLowerCase() === 'delivered' ? 'Return Order' : 'Request Refund'}
                                 </h3>
-                                <p className="text-[11px] text-gray-400 font-medium tracking-tight mt-1">Please provide a valid reason for your refund request for Order {orderNo}.</p>
+                                <p className="text-[11px] text-gray-400 font-medium tracking-tight mt-1">Please provide a valid reason for your {String(order.delivery_status || '').toLowerCase() === 'delivered' ? 'return' : 'refund'} request for Order {orderNo}.</p>
                             </div>
 
                             <form onSubmit={handleRefundRequest} className="p-8 space-y-6">

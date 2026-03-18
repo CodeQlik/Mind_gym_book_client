@@ -58,13 +58,13 @@ export default function BookDetailClient({ initialBook }) {
                     const data = res.data.data || {};
                     let allBooks = [];
                     const booksSource = data.books || data;
-                    
+
                     if (Array.isArray(booksSource)) {
                         allBooks = booksSource;
                     } else if (booksSource && typeof booksSource === 'object') {
                         allBooks = Object.values(booksSource).flat().filter(book => book !== null && typeof book === 'object');
                     }
-                    
+
                     setRelatedBooks(allBooks.slice(0, 5));
                 }
             } catch (err) {
@@ -75,10 +75,10 @@ export default function BookDetailClient({ initialBook }) {
     }, []);
 
     useEffect(() => {
-        if (params.id) {
+        if (book?.id) {
             const fetchReviews = async () => {
                 try {
-                    const res = await api.get(`/review/book/${params.id}`);
+                    const res = await api.get(`/review/book/${book.id}`);
                     if (res.data?.success) {
                         setReviews(res.data.data || []);
                     }
@@ -88,7 +88,7 @@ export default function BookDetailClient({ initialBook }) {
             };
             fetchReviews();
         }
-    }, [params.id]);
+    }, [book?.id]);
 
     useEffect(() => {
         if (!initialBook && params.id) {
@@ -218,10 +218,10 @@ export default function BookDetailClient({ initialBook }) {
 
     const computedHighlights = [];
     if (book.highlights && Array.isArray(book.highlights)) computedHighlights.push(...book.highlights);
-    else if (typeof book.highlights === 'string') computedHighlights.push(...book.highlights.split(',').map(s=>s.trim()).filter(Boolean));
-    
+    else if (typeof book.highlights === 'string') computedHighlights.push(...book.highlights.split(',').map(s => s.trim()).filter(Boolean));
+
     if (computedHighlights.length === 0) {
-        if (book.seo_keywords) computedHighlights.push(...book.seo_keywords.split(',').map(s=>s.trim()).filter(Boolean));
+        if (book.seo_keywords) computedHighlights.push(...book.seo_keywords.split(',').map(s => s.trim()).filter(Boolean));
         if (book.short_description) computedHighlights.push(book.short_description);
     }
 
@@ -246,13 +246,14 @@ export default function BookDetailClient({ initialBook }) {
             </div>
 
             <main className="max-w-7xl mx-auto px-6 md:px-12 pb-24">
-                
+
                 {/* Hero Section */}
                 <div className="flex flex-col lg:flex-row gap-16 lg:gap-24 items-start mb-24">
                     {/* Left: Book Cover gallery */}
                     <div className="w-full lg:w-5/12 shrink-0 relative group">
-                        
-                        <style dangerouslySetInnerHTML={{__html: `
+
+                        <style dangerouslySetInnerHTML={{
+                            __html: `
                             .perspective-container {
                                 perspective: 2000px;
                                 transform-style: preserve-3d;
@@ -277,7 +278,7 @@ export default function BookDetailClient({ initialBook }) {
                         `}} />
 
                         <div className="relative w-[70%] mx-auto lg:w-[85%] aspect-[3/4] rounded-2xl bg-gray-100 shadow-[inset_0_-20px_40px_rgba(0,0,0,0.02)] perspective-container">
-                            
+
                             {!isFlipping && (
                                 <div className="absolute top-0 left-0 w-full h-full drop-shadow-[0_20px_40px_rgba(0,0,0,0.15)] rounded-2xl overflow-hidden z-10 transition-all">
                                     <Image src={allImages[currentImageIndex]} alt={book.title} fill quality={100} priority className="object-cover" />
@@ -352,28 +353,47 @@ export default function BookDetailClient({ initialBook }) {
                             {/* Stars */}
                             <div className="flex items-center gap-1.5">
                                 <div className="flex gap-0.5">
-                                    {[1, 2, 3, 4].map((i) => <Star key={i} size={16} className="fill-[#FFC107] text-[#FFC107]" />)}
-                                    <Star size={16} className="text-[#FFC107] stroke-[2px] opacity-70" />
+                                    {[1, 2, 3, 4, 5].map((i) => {
+                                        const bookRating = Number(book.average_rating || book.rating || 0);
+                                        const reviewsAvg = reviews.length > 0 ? reviews.reduce((acc, rev) => acc + Number(rev.rating), 0) / reviews.length : 0;
+                                        const finalRating = bookRating > 0 ? bookRating : reviewsAvg;
+
+                                        return (
+                                            <Star
+                                                key={i}
+                                                size={16}
+                                                className={i <= Math.round(finalRating) ? "fill-[#FFC107] text-[#FFC107]" : "text-[#FFC107] stroke-[2px] opacity-20"}
+                                            />
+                                        );
+                                    })}
                                 </div>
-                                <span className="text-sm font-bold text-[#1A1A1A] ml-1">4.5</span>
-                                <span className="text-[13px] font-medium text-[#888888]">(120 Reviews)</span>
+                                <span className="text-sm font-black text-[#1A1A1A] ml-1">
+                                    {(() => {
+                                        const bookRating = Number(book.average_rating || book.rating || 0);
+                                        const reviewsAvg = reviews.length > 0 ? reviews.reduce((acc, rev) => acc + Number(rev.rating), 0) / reviews.length : 0;
+                                        return (bookRating > 0 ? bookRating : reviewsAvg).toFixed(1);
+                                    })()}
+                                </span>
+                                <span className="text-[13px] font-bold text-[#888888]">
+                                    ({Math.max(Number(book.reviews_count || 0), reviews.length)} {Math.max(Number(book.reviews_count || 0), reviews.length) === 1 ? 'Review' : 'Reviews'})
+                                </span>
                             </div>
 
                             {/* Price */}
                             <div className="flex items-baseline gap-2">
                                 <span className="text-2xl font-black text-[#1A1A1A]">
-                                    ${parseFloat(book.price || 24.99).toFixed(2)}
+                                    ₹{(parseFloat(book.price || 0)).toLocaleString()}
                                 </span>
                                 {hasDiscount && (
                                     <span className="text-sm text-[#888888] line-through font-medium">
-                                        ${parseFloat(book.original_price).toFixed(2)}
+                                        ₹{(parseFloat(book.original_price || 0)).toLocaleString()}
                                     </span>
                                 )}
                             </div>
                         </div>
 
-                        <p className="text-[#666666] text-[15px] leading-relaxed mb-8">
-                            Experience a captivating narrative that will keep you engaged from the very first page to the last. This highly recommended edition is perfect for your personal library or as a thoughtful gift for any book lover.
+                        <p className="text-[#666666] text-[15px] leading-relaxed mb-8 line-clamp-4">
+                            {book.description || "Experience a captivating narrative that will keep you engaged from the very first page to the last. This highly recommended edition is perfect for your personal library or as a thoughtful gift for any book lover."}
                         </p>
 
                         {/* Actions */}
@@ -434,7 +454,7 @@ export default function BookDetailClient({ initialBook }) {
 
                 {/* Middle Section: Description & Product Details */}
                 <div className="grid lg:grid-cols-3 gap-16 lg:gap-24 mb-24">
-                    
+
                     {/* Left: Long Description & Highlights */}
                     <div className="lg:col-span-2 space-y-12">
                         {/* Heading */}
@@ -454,7 +474,7 @@ export default function BookDetailClient({ initialBook }) {
                                 <h3 className="text-lg font-black text-[#1A1A1A] mb-8 flex items-center gap-2">
                                     <span>💡</span> Key Highlights
                                 </h3>
-                                
+
                                 <div className="grid sm:grid-cols-2 gap-y-4 gap-x-8">
                                     {computedHighlights.map((highlightItem, idx) => (
                                         <div key={idx} className="flex items-start gap-3 col-span-1">
@@ -472,18 +492,18 @@ export default function BookDetailClient({ initialBook }) {
                     <div className="lg:col-span-1">
                         <div className="bg-gray-50/80 rounded-3xl p-8 border border-gray-100">
                             <h3 className="text-lg font-black text-[#1A1A1A] mb-8">Product Details</h3>
-                            
+
                             <div className="space-y-5">
                                 {[
-                                    { icon: <Hash size={16}/>, label: "ISBN", value: book.isbn || "N/A" },
-                                    { icon: <Globe size={16}/>, label: "Language", value: book.language || "N/A" },
-                                    { icon: <FileText size={16}/>, label: "Price", value: `₹${parseFloat(book.price || 0).toFixed(2)}` },
-                                    { icon: <FileText size={16}/>, label: "MRP", value: book.original_price ? `₹${parseFloat(book.original_price).toFixed(2)}` : "N/A" },
-                                    { icon: <Layers size={16}/>, label: "Weight", value: book.weight ? `${book.weight}g` : "N/A" },
-                                    { icon: <Building2 size={16}/>, label: "Dimensions", value: book.dimensions || "N/A" },
-                                    { icon: <BookOpen size={16}/>, label: "Condition", value: book.condition || "New" },
-                                    { icon: <Truck size={16}/>, label: "Stock", value: book.stock !== undefined ? book.stock : "N/A" },
-                                    { icon: <FileText size={16}/>, label: "Release", value: book.release_date || (book.created_at ? new Date(book.created_at).toLocaleDateString() : "N/A") }
+                                    { icon: <Hash size={16} />, label: "ISBN", value: book.isbn || "N/A" },
+                                    { icon: <Globe size={16} />, label: "Language", value: book.language || "N/A" },
+                                    { icon: <FileText size={16} />, label: "Price", value: `₹${parseFloat(book.price || 0).toFixed(2)}` },
+                                    { icon: <FileText size={16} />, label: "MRP", value: book.original_price ? `₹${parseFloat(book.original_price).toFixed(2)}` : "N/A" },
+                                    { icon: <Layers size={16} />, label: "Weight", value: book.weight ? `${book.weight}g` : "N/A" },
+                                    { icon: <Building2 size={16} />, label: "Dimensions", value: book.dimensions || "N/A" },
+                                    { icon: <BookOpen size={16} />, label: "Condition", value: book.condition || "New" },
+                                    { icon: <Truck size={16} />, label: "Stock", value: book.stock !== undefined ? book.stock : "N/A" },
+                                    { icon: <FileText size={16} />, label: "Release", value: book.release_date || (book.created_at ? new Date(book.created_at).toLocaleDateString() : "N/A") }
                                 ].map((detail, idx) => (
                                     <div key={idx} className="flex items-center justify-between py-3 border-b border-gray-200/60 last:border-0 last:pb-0">
                                         <div className="flex items-center gap-3 text-[#888888]">
@@ -496,9 +516,14 @@ export default function BookDetailClient({ initialBook }) {
                             </div>
 
                             <div className="mt-10 pt-6 border-t border-gray-200 text-center">
-                                <button className="text-[13px] font-black tracking-widest uppercase text-[#FFC107] hover:text-[#1A1A1A] transition-colors inline-flex items-center gap-1">
+                                <a
+                                    href={`https://play.google.com/store/search?q=${encodeURIComponent(`${book.title} ${book.author}`)}&c=books`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-[13px] font-black tracking-widest uppercase text-[#FFC107] hover:text-[#1A1A1A] transition-colors inline-flex items-center gap-1"
+                                >
                                     Read a Sample Chapter <ChevronRight size={14} />
-                                </button>
+                                </a>
                             </div>
                         </div>
                     </div>
@@ -519,7 +544,8 @@ export default function BookDetailClient({ initialBook }) {
                         </button>
                     </div>
 
-                    <style dangerouslySetInnerHTML={{__html: `
+                    <style dangerouslySetInnerHTML={{
+                        __html: `
                         @keyframes slide-marquee {
                             from { transform: translateX(0); }
                             to { transform: translateX(-50%); }
@@ -537,22 +563,22 @@ export default function BookDetailClient({ initialBook }) {
                     {reviews && reviews.length > 0 ? (
                         <div className="relative overflow-hidden w-full before:absolute before:left-0 before:top-0 before:h-full before:w-16 before:bg-gradient-to-r before:from-[#FAFAFA] before:to-transparent before:z-10 after:absolute after:right-0 after:top-0 after:h-full after:w-16 after:bg-gradient-to-l after:from-[#FAFAFA] after:to-transparent after:z-10 py-4">
                             <div className={`gap-6 ${reviews.length > 3 ? "marquee-container" : "flex w-full"}`}>
-                            {/* We duplicate the array to create a seamless infinite scroll effect ONLY if more than 3 reviews */}
-                            {(reviews.length > 3 ? [...reviews, ...reviews, ...reviews, ...reviews, ...reviews, ...reviews] : reviews).map((review, idx) => (
-                                <div key={idx} className="bg-white p-8 rounded-3xl border border-gray-100 shrink-0 w-[300px] md:w-[400px] whitespace-normal flex flex-col justify-between">
-                                    <div>
-                                        <div className="flex items-center justify-between mb-4">
-                                            <h4 className="text-[16px] font-black text-[#1A1A1A]">{review.user?.name || "Anonymous Reader"}</h4>
-                                            <div className="flex gap-1 shrink-0">
-                                                {[...Array(5)].map((_, i) => (
-                                                    <Star key={i} size={14} className={i < review.rating ? "fill-[#FFC107] text-[#FFC107]" : "text-gray-200 fill-gray-100"} />
-                                                ))}
+                                {/* We duplicate the array to create a seamless infinite scroll effect ONLY if more than 3 reviews */}
+                                {(reviews.length > 3 ? [...reviews, ...reviews, ...reviews, ...reviews, ...reviews, ...reviews] : reviews).map((review, idx) => (
+                                    <div key={idx} className="bg-white p-8 rounded-3xl border border-gray-100 shrink-0 w-[300px] md:w-[400px] whitespace-normal flex flex-col justify-between">
+                                        <div>
+                                            <div className="flex items-center justify-between mb-4">
+                                                <h4 className="text-[16px] font-black text-[#1A1A1A]">{review.user?.name || "Anonymous Reader"}</h4>
+                                                <div className="flex gap-1 shrink-0">
+                                                    {[...Array(5)].map((_, i) => (
+                                                        <Star key={i} size={14} className={i < review.rating ? "fill-[#FFC107] text-[#FFC107]" : "text-gray-200 fill-gray-100"} />
+                                                    ))}
+                                                </div>
                                             </div>
+                                            <p className="text-[#666666] text-[14px] leading-relaxed font-medium line-clamp-4">"{review.comment}"</p>
                                         </div>
-                                        <p className="text-[#666666] text-[14px] leading-relaxed font-medium line-clamp-4">"{review.comment}"</p>
                                     </div>
-                                </div>
-                            ))}
+                                ))}
                             </div>
                         </div>
                     ) : (
@@ -570,18 +596,18 @@ export default function BookDetailClient({ initialBook }) {
                 {/* Related Books Section */}
                 <div className="mb-24">
                     <h2 className="text-2xl font-black text-[#1A1A1A] mb-10">Related Books You Might Like</h2>
-                    
+
                     <div className="grid grid-cols-2 lg:grid-cols-5 gap-6">
                         {relatedBooks.length > 0 ? relatedBooks.map((related, idx) => (
                             <div key={related.id || idx} className="group cursor-pointer" onClick={() => router.push(`/books/${related.id}`)}>
                                 <div className="relative w-full aspect-[3/4] rounded-xl bg-gray-100 mb-4 overflow-hidden border border-gray-200/60 shadow-sm">
-                                     <Image 
-                                        src={related.thumbnail?.url || related.thumbnail || related.image || "/placeholder-book.jpg"} 
-                                        alt={related.title} 
-                                        fill 
-                                        className="object-cover group-hover:scale-105 transition-transform duration-500" 
-                                     />
-                                     <button 
+                                    <Image
+                                        src={related.thumbnail?.url || related.thumbnail || related.image || "/placeholder-book.jpg"}
+                                        alt={related.title}
+                                        fill
+                                        className="object-cover group-hover:scale-105 transition-transform duration-500"
+                                    />
+                                    <button
                                         onClick={(e) => {
                                             e.stopPropagation();
                                             // Optional: Handle wishlist toggle here if desired
@@ -589,7 +615,7 @@ export default function BookDetailClient({ initialBook }) {
                                         className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white flex items-center justify-center text-gray-400 hover:text-red-500 shadow-sm opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0"
                                     >
                                         <Heart size={14} />
-                                     </button>
+                                    </button>
                                 </div>
                                 <h4 className="text-[14px] font-black text-[#1A1A1A] mb-1 leading-tight line-clamp-1">{related.title}</h4>
                                 <p className="text-[12px] font-bold text-[#888888] mb-2">{related.author || "Global Author"}</p>
@@ -614,15 +640,15 @@ export default function BookDetailClient({ initialBook }) {
                     {/* Decorative Blurs */}
                     <div className="absolute top-0 right-0 w-64 h-64 bg-white/40 blur-3xl rounded-full mix-blend-overlay"></div>
                     <div className="absolute bottom-0 left-0 w-64 h-64 bg-[#FFC107]/20 blur-3xl rounded-full mix-blend-overlay"></div>
-                    
+
                     <h2 className="text-3xl md:text-5xl font-black text-[#1A1A1A] mb-6 relative z-10 leading-[1.15] tracking-tight">
                         Discover Your Next Great Adventure
                     </h2>
-                    
+
                     <p className="text-[#666666] text-[15px] font-medium max-w-xl mx-auto mb-10 relative z-10">
                         Explore our curated collections of award-winning fiction, insightful non-fiction, and timeless classics.
                     </p>
-                    
+
                     <button onClick={() => router.push("/books")} className="bg-[#1A1A1A] text-white px-10 py-5 rounded-full font-bold text-[14px] hover:bg-[#FFC107] hover:text-[#1A1A1A] transition-all transform hover:-translate-y-1 shadow-lg relative z-10 active:scale-95">
                         Browse All Books
                     </button>
@@ -634,14 +660,14 @@ export default function BookDetailClient({ initialBook }) {
             {isReviewOpen && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
                     {/* Dark Overlay */}
-                    <div 
+                    <div
                         className="absolute inset-0 bg-black/70 backdrop-blur-sm transition-opacity"
                         onClick={() => setIsReviewOpen(false)}
                     ></div>
-                    
+
                     {/* Modal Content */}
                     <div className="relative bg-white rounded-3xl w-full max-w-lg p-8 shadow-2xl z-10 animate-in fade-in zoom-in duration-300">
-                        <button 
+                        <button
                             onClick={() => setIsReviewOpen(false)}
                             className="absolute top-6 right-6 text-gray-400 hover:text-black transition-colors"
                         >
@@ -698,9 +724,9 @@ export default function BookDetailClient({ initialBook }) {
                                             onMouseEnter={() => setHoverRating(star)}
                                             onClick={() => setReviewRating(star)}
                                         >
-                                            <Star 
-                                                size={32} 
-                                                className={(hoverRating || reviewRating) >= star ? "fill-[#FFC107] text-[#FFC107]" : "text-gray-200 fill-gray-100 transition-colors"} 
+                                            <Star
+                                                size={32}
+                                                className={(hoverRating || reviewRating) >= star ? "fill-[#FFC107] text-[#FFC107]" : "text-gray-200 fill-gray-100 transition-colors"}
                                             />
                                         </button>
                                     ))}
@@ -710,8 +736,8 @@ export default function BookDetailClient({ initialBook }) {
                             {/* Note: The backend uses the logged-in user's name, so this field is just for display or we can remove it. Keeping it disabled if logged in or we can pass it if the backend supports it. For now, it's just visually here. */}
                             <div className="mb-6 hidden">
                                 <label className="block text-sm font-bold text-[#1A1A1A] mb-2">Name</label>
-                                <input 
-                                    type="text" 
+                                <input
+                                    type="text"
                                     value={reviewName}
                                     onChange={(e) => setReviewName(e.target.value)}
                                     placeholder="Your Name (Optional)"
@@ -721,7 +747,7 @@ export default function BookDetailClient({ initialBook }) {
 
                             <div className="mb-8">
                                 <label className="block text-sm font-bold text-[#1A1A1A] mb-2">Your Review</label>
-                                <textarea 
+                                <textarea
                                     required
                                     rows="4"
                                     value={reviewText}
@@ -731,8 +757,8 @@ export default function BookDetailClient({ initialBook }) {
                                 ></textarea>
                             </div>
 
-                            <button 
-                                type="submit" 
+                            <button
+                                type="submit"
                                 className="w-full bg-[#FFC107] text-[#1A1A1A] px-6 py-4 rounded-xl font-bold text-[15px] hover:bg-black hover:text-white transition-all shadow-[0_4px_14px_0_rgba(255,193,7,0.39)] transform hover:-translate-y-0.5 active:scale-95"
                             >
                                 Submit Review

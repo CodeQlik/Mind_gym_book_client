@@ -38,12 +38,12 @@ const TestimonialSection = ({ bgColor = "bg-white" }) => {
 
                 {/* Infinite CSS Marquee Slider */}
                 <div className="relative pt-4 pb-12 overflow-hidden flex marquee-container">
-                    <div className="flex gap-8 marquee-content group">
+                    <div className="flex gap-5 md:gap-8 marquee-content group">
                         {/* Duplicate content to ensure seamless looping */}
                         {[...testimonials, ...testimonials, ...testimonials].map((item, index) => (
                             <div
                                 key={`${item.id}-${index}`}
-                                className="w-[380px] bg-white p-8 rounded-[32px] border border-gray-100 shadow-sm flex-shrink-0 transition-all duration-500 hover:border-[#F7941E]/20 group/card cursor-default"
+                                className="w-[280px] sm:w-[380px] bg-white p-6 sm:p-8 rounded-[32px] border border-gray-100 shadow-sm flex-shrink-0 transition-all duration-500 hover:border-[#F7941E]/20 group/card cursor-default"
                                 style={{ whiteSpace: 'normal' }}
                             >
                                 <div className="flex items-center justify-between mb-6">
@@ -87,9 +87,9 @@ const TestimonialSection = ({ bgColor = "bg-white" }) => {
                 </div>
             </div>
 
-            {/* Edge Shadow Overlays */}
-            <div className="absolute inset-y-0 left-0 w-40 bg-gradient-to-r from-white via-white/80 to-transparent z-10 pointer-events-none"></div>
-            <div className="absolute inset-y-0 right-0 w-40 bg-gradient-to-l from-white via-white/80 to-transparent z-10 pointer-events-none"></div>
+            {/* Edge Shadow Overlays - Hidden on Mobile */}
+            <div className="hidden md:block absolute inset-y-0 left-0 w-40 bg-gradient-to-r from-white via-white/80 to-transparent z-10 pointer-events-none"></div>
+            <div className="hidden md:block absolute inset-y-0 right-0 w-40 bg-gradient-to-l from-white via-white/80 to-transparent z-10 pointer-events-none"></div>
 
             <style jsx>{`
                 .marquee-container {
@@ -104,7 +104,7 @@ const TestimonialSection = ({ bgColor = "bg-white" }) => {
                 }
                 @keyframes scroll {
                     from { transform: translateX(0); }
-                    to { transform: translateX(calc(-33.333% - 2.66rem)); } /* Accounts for item width + gap */
+                    to { transform: translateX(-33.333%); } 
                 }
                 .line-clamp-3 {
                     display: -webkit-box;

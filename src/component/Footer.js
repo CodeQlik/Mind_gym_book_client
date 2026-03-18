@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { useState } from "react";
 import {
     Facebook,
     Twitter,
@@ -8,128 +8,184 @@ import {
     Mail,
     Phone,
     MapPin,
-    Feather
+    Globe,
+    ChevronDown
 } from "lucide-react";
 import Link from "next/link";
-import Image from "next/image";
 
 const Footer = () => {
+    const [openSection, setOpenSection] = useState(null);
+
+    const toggleSection = (section) => {
+        setOpenSection(openSection === section ? null : section);
+    };
+
+    const footerLinks = {
+        company: [
+            { name: "About Us", path: "/about" },
+            { name: "Books", path: "/books" },
+            { name: "Blog", path: "/blog" },
+            { name: "Contact Us", path: "/contact" }
+        ],
+        customerService: [
+            { name: "Help Center", path: "/support" },
+            { name: "Support Tickets", path: "/support" },
+            { name: "Shipping Info", path: "/shipping-policy" },
+            { name: "Refund Policy", path: "/refund-policy" },
+            { name: "Return Policy", path: "/return-policy" },
+        ],
+        account: [
+            { name: "Login / Register", path: "/login" },
+            { name: "My Profile", path: "/profile" },
+            { name: "My Orders", path: "/profile" },
+            { name: "My Wishlist", path: "/wishlist" },
+            { name: "Order History", path: "/profile" }
+        ]
+    };
+
     return (
-        <footer className="bg-black text-white font-sans">
+        <footer className="bg-[#0A0A0A] text-white font-sans overflow-hidden border-t border-white/5">
+            {/* Main Content Area */}
+            <div className="pt-20 pb-12 px-6 md:px-12 max-w-[1440px] mx-auto text-left">
+                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-12 gap-12 md:gap-y-16 lg:gap-4">
+                    
+                    {/* Brand Section */}
+                    <div className="md:col-span-3 lg:col-span-3 space-y-8">
+                        <Link href="/" className="inline-flex items-center gap-3 group">
+                            <div className="w-10 h-10 bg-primary flex items-center justify-center rounded-sm transition-all duration-300 group-hover:rotate-6 group-hover:shadow-[0_0_20px_rgba(247,148,30,0.3)]">
+                                <span className="text-black font-black text-2xl">M</span>
+                            </div>
+                            <span className="text-white font-black text-2xl tracking-tighter uppercase whitespace-nowrap">Mind Gym Book</span>
+                        </Link>
+                        <p className="text-white/40 text-[13px] leading-relaxed max-w-[280px]">
+                            Elevating the reading experience through curated wisdom and premium literary collections for the modern intellectual.
+                        </p>
+                    </div>
 
-            {/* Main Footer Links Area */}
-            <div className="py-20 px-6 md:px-12 bg-[#050505] border-t border-white/5">
-                <div className="max-w-[1440px] mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-12 lg:gap-10">
-
-                    {/* Company Column */}
-                    <div className="space-y-8">
-                        <div>
-                            <Link href="/" className="flex items-center group mb-6">
-                                <div className="relative w-28 h-12 overflow-hidden">
-                                    <Image
-                                        src="/logo.jpeg"
-                                        alt="Mind Gym Book Logo"
-                                        fill
-                                        className="object-contain group-hover:scale-105 transition-transform duration-500 ease-out brightness-0 invert"
-                                    />
-                                </div>
-                            </Link>
-                            <h4 className="text-[10px] font-bold text-white uppercase tracking-[0.2em] mb-4 opacity-50">
+                    {/* Company Links Section */}
+                    <div className="md:col-span-1 lg:col-span-2 border-b border-white/5 md:border-none">
+                        <button 
+                            onClick={() => toggleSection('company')}
+                            className="w-full flex items-center justify-between md:cursor-default md:pointer-events-none group"
+                        >
+                            <h4 className="text-[10px] font-black text-primary uppercase tracking-[0.25em] py-4 md:py-0 md:mb-8">
                                 Company
                             </h4>
-                            <ul className="space-y-3">
-                                {[
-                                    { name: "About Us", path: "/about" },
-                                    { name: "Our Story", path: "/about" },
-                                    { name: "Blog", path: "/blog" },
-                                    { name: "Careers", path: "/careers" },
-                                    { name: "Contact Us", path: "/contact" }
-                                ].map((link) => (
-                                    <li key={link.name}>
-                                        <Link href={link.path} className="text-white/60 hover:text-[#F7941E] text-xs font-medium transition-colors">
-                                            {link.name}
-                                        </Link>
-                                    </li>
-                                ))}
-                            </ul>
+                            <ChevronDown 
+                                size={14} 
+                                className={`md:hidden transition-transform duration-300 ${openSection === 'company' ? 'rotate-180 text-primary' : 'text-white/30'}`} 
+                            />
+                        </button>
+                        <ul className={`space-y-4 overflow-hidden transition-all duration-300 ease-in-out md:max-h-none ${openSection === 'company' ? 'max-h-60 mb-8' : 'max-h-0 md:max-h-none mb-0 md:mb-0'}`}>
+                            {footerLinks.company.map((link) => (
+                                <li key={link.name}>
+                                    <Link href={link.path} className="text-white font-bold text-[13px] hover:text-primary transition-colors duration-200">
+                                        {link.name}
+                                    </Link>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+
+                    {/* Customer Service Links Section */}
+                    <div className="md:col-span-1 lg:col-span-2 border-b border-white/5 md:border-none">
+                        <button 
+                            onClick={() => toggleSection('customerService')}
+                            className="w-full flex items-center justify-between md:cursor-default md:pointer-events-none group"
+                        >
+                            <h4 className="text-[10px] font-black text-primary uppercase tracking-[0.25em] py-4 md:py-0 md:mb-8">
+                                Customer Service
+                            </h4>
+                            <ChevronDown 
+                                size={14} 
+                                className={`md:hidden transition-transform duration-300 ${openSection === 'customerService' ? 'rotate-180 text-primary' : 'text-white/30'}`} 
+                            />
+                        </button>
+                        <ul className={`space-y-4 overflow-hidden transition-all duration-300 ease-in-out md:max-h-none ${openSection === 'customerService' ? 'max-h-60 mb-8' : 'max-h-0 md:max-h-none mb-0 md:mb-0'}`}>
+                            {footerLinks.customerService.map((link) => (
+                                <li key={link.name}>
+                                    <Link href={link.path} className="text-white font-bold text-[13px] hover:text-primary transition-colors duration-200">
+                                        {link.name}
+                                    </Link>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+
+                    {/* My Account Links Section */}
+                    <div className="md:col-span-1 lg:col-span-2 border-b border-white/5 md:border-none">
+                        <button 
+                            onClick={() => toggleSection('account')}
+                            className="w-full flex items-center justify-between md:cursor-default md:pointer-events-none group"
+                        >
+                            <h4 className="text-[10px] font-black text-primary uppercase tracking-[0.25em] py-4 md:py-0 md:mb-8">
+                                My Account
+                            </h4>
+                            <ChevronDown 
+                                size={14} 
+                                className={`md:hidden transition-transform duration-300 ${openSection === 'account' ? 'rotate-180 text-primary' : 'text-white/30'}`} 
+                            />
+                        </button>
+                        <ul className={`space-y-4 overflow-hidden transition-all duration-300 ease-in-out md:max-h-none ${openSection === 'account' ? 'max-h-60 mb-8' : 'max-h-0 md:max-h-none mb-0 md:mb-0'}`}>
+                            {footerLinks.account.map((link) => (
+                                <li key={link.name}>
+                                    <Link href={link.path} className="text-white font-bold text-[13px] hover:text-primary transition-colors duration-200">
+                                        {link.name}
+                                    </Link>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+
+                    {/* Contact Section */}
+                    <div className="md:col-span-3 lg:col-span-3 flex flex-col items-center md:items-start gap-10">
+                        <div className="bg-[#121212] border border-white/5 rounded-[1.5rem] p-8 w-full space-y-8 max-w-md md:max-w-xl lg:max-w-none">
+                            <h4 className="text-[10px] font-black text-primary uppercase tracking-[0.2em]">
+                                Get In Touch
+                            </h4>
+                            
+                            <div className="space-y-6">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center shrink-0 border border-white/5">
+                                        <MapPin size={16} className="text-white" />
+                                    </div>
+                                    <div>
+                                        <p className="text-[9px] text-white/30 uppercase tracking-widest mb-0.5">Location</p>
+                                        <p className="text-[14px] font-bold text-white whitespace-nowrap">Reading City, RC 12345</p>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center gap-4">
+                                    <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center shrink-0 border border-white/5">
+                                        <Phone size={16} className="text-white" />
+                                    </div>
+                                    <div>
+                                        <p className="text-[9px] text-white/30 uppercase tracking-widest mb-0.5">Phone</p>
+                                        <p className="text-[14px] font-bold text-white whitespace-nowrap">+91 98765 43210</p>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center gap-4">
+                                    <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center shrink-0 border border-white/5">
+                                        <Mail size={16} className="text-white" />
+                                    </div>
+                                    <div>
+                                        <p className="text-[9px] text-white/30 uppercase tracking-widest mb-0.5">Email</p>
+                                        <p className="text-[14px] font-bold text-white lowercase whitespace-nowrap">support@mindgym.com</p>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                    </div>
 
-                    {/* Customer Service Column */}
-                    <div>
-                        <h4 className="text-[10px] font-bold text-white uppercase tracking-[0.2em] mb-8 opacity-50">
-                            Customer Service
-                        </h4>
-                        <ul className="space-y-4">
-                            {[
-                                { name: "FAQ", path: "/faq" },
-                                { name: "Help Center", path: "/support" },
-                                { name: "Support Tickets", path: "/support" },
-                                { name: "Shipping Information", path: "/shipping-policy" },
-                                { name: "Refund Policy", path: "/refund-policy" },
-                                { name: "Return Policy", path: "/return-policy" },
-                            ].map((link) => (
-                                <li key={link.name}>
-                                    <Link href={link.path} className="text-white/60 hover:text-[#F7941E] text-xs font-medium transition-colors">
-                                        {link.name}
-                                    </Link>
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
-
-
-
-                    {/* My Account Column */}
-                    <div>
-                        <h4 className="text-[10px] font-bold text-white uppercase tracking-[0.2em] mb-8 opacity-50">
-                            My Account
-                        </h4>
-                        <ul className="space-y-4">
-                            {[
-                                { name: "Login / Register", path: "/login" },
-                                { name: "My Profile", path: "/profile" },
-                                { name: "My Orders", path: "/profile" },
-                                { name: "My Wishlist", path: "/wishlist" },
-                                { name: "Order History", path: "/profile" }
-                            ].map((link) => (
-                                <li key={link.name}>
-                                    <Link href={link.path} className="text-white/60 hover:text-[#F7941E] text-xs font-medium transition-colors">
-                                        {link.name}
-                                    </Link>
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
-
-                    {/* Policies Column */}
-                    <div>
-                        <h4 className="text-[10px] font-bold text-white uppercase tracking-[0.2em] mb-8 opacity-50">
-                            Policies
-                        </h4>
-                        <ul className="space-y-4 mb-8">
-                            {[
-                                { name: "Privacy Policy", path: "/privacy-policy" },
-                                { name: "Terms & Conditions", path: "/terms-conditions" },
-                                { name: "Cookie Policy", path: "/cookie-policy" }
-                            ].map((link) => (
-                                <li key={link.name}>
-                                    <Link href={link.path} className="text-white/60 hover:text-[#F7941E] text-xs font-medium transition-colors">
-                                        {link.name}
-                                    </Link>
-                                </li>
-                            ))}
-                        </ul>
-
-                        {/* Social Links merged here */}
-                        <div className="flex items-center gap-3">
+                        {/* Social Links */}
+                        <div className="flex items-center gap-3 pr-2">
                             {[Facebook, Instagram, Twitter, Youtube].map((Icon, idx) => (
-                                <a
-                                    key={idx}
-                                    href="#"
-                                    className="w-8 h-8 rounded-full border border-white/10 flex items-center justify-center text-white/40 hover:bg-[#F7941E] hover:text-black hover:border-[#F7941E] transition-all duration-300"
+                                <a 
+                                    key={idx} 
+                                    href="#" 
+                                    className="w-11 h-11 rounded-full border border-white/10 flex items-center justify-center text-white/40 hover:bg-primary hover:text-black hover:border-primary transition-all duration-300 transform hover:-translate-y-1"
                                 >
-                                    <Icon size={14} />
+                                    <Icon size={18} className="group-hover:text-black text-white" />
                                 </a>
                             ))}
                         </div>
@@ -138,16 +194,20 @@ const Footer = () => {
             </div>
 
             {/* Bottom Bar */}
-            <div className="py-8 px-6 md:px-12 bg-black border-t border-white/5 text-center sm:text-left">
-                <div className="max-w-[1440px] mx-auto flex flex-col sm:flex-row justify-between items-center gap-6">
-                    <p className="text-white/30 text-[9px] font-medium tracking-[0.2em] uppercase">
+            <div className="border-t border-white/5 py-10 px-6 md:px-12 bg-black">
+                <div className="max-w-[1440px] mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
+                    <p className="text-white/20 text-[10px] font-bold tracking-[0.2em] uppercase">
                         © 2026 Mind Gym Book. All rights reserved.
                     </p>
-                    <div className="flex items-center gap-4">
-                        <MapPin size={12} className="text-[#F7941E]" />
-                        <span className="text-white/30 text-[9px] font-medium uppercase tracking-widest">
-                            123 Book Street, Reading City, RC 12345
-                        </span>
+                    <div className="flex items-center gap-8 text-[10px] font-bold uppercase tracking-widest text-white/20">
+                        <div className="flex items-center gap-2">
+                             <Globe size={14} className="opacity-50" />
+                             <span>Global Shipping Available</span>
+                        </div>
+                        <Link href="mailto:contact@mindgym.com" className="flex items-center gap-2 hover:text-white transition-colors">
+                            <Mail size={14} className="opacity-50" />
+                            <span>contact@mindgym.com</span>
+                        </Link>
                     </div>
                 </div>
             </div>
@@ -156,3 +216,4 @@ const Footer = () => {
 };
 
 export default Footer;
+

@@ -85,15 +85,8 @@ const ForgotPasswordPage = () => {
             </div>
 
             <div className="max-w-[450px] w-full bg-white rounded-[40px] shadow-2xl shadow-[#2D3E50]/10 pt-8 pb-10 px-10 md:pt-10 md:pb-14 md:px-14 relative z-10 border border-white/20 backdrop-blur-sm">
-                {/* Brand Logo */}
                 <div className="flex flex-col mb-8 items-center">
-                    <Link href="/" className="flex items-center gap-2 group mb-6">
-                        <Feather className="text-secondary w-8 h-8 transform -rotate-12 group-hover:rotate-0 transition-all duration-500 ease-out" />
-                        <div className="flex flex-col items-start pt-0.5">
-                            <h1 className="text-base font-bold text-secondary tracking-widest leading-none uppercase">Mind Gym Book</h1>
-                            <p className="text-[8px] tracking-[0.4em] text-secondary/50 font-black uppercase mt-1">Mental Excellence</p>
-                        </div>
-                    </Link>
+
 
                     <p className="text-secondary/40 text-[11px] font-black uppercase tracking-[0.2em] border-y border-secondary/5 py-3 w-full text-center">
                         {step === 4 ? "Success" : "Reset your password"}
@@ -111,7 +104,7 @@ const ForgotPasswordPage = () => {
                                 <input
                                     type="email"
                                     value={email}
-                                    placeholder="name@domain.com"
+                                    placeholder="name@gmail.com"
                                     className="w-full h-14 bg-[#FDFBF7] border border-secondary/10 rounded-2xl pl-14 pr-6 font-sans font-bold text-secondary text-sm outline-none transition-all focus:border-[#D76B52]/40"
                                     onChange={(e) => setEmail(e.target.value)}
                                     required
@@ -121,7 +114,7 @@ const ForgotPasswordPage = () => {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="w-full h-14 bg-[#D76B52] text-white rounded-2xl font-sans font-black uppercase tracking-widest shadow-xl shadow-[#D76B52]/20 hover:bg-red-950 transition-all duration-500 flex items-center justify-center gap-3 group disabled:opacity-70"
+                            className="w-full h-14 bg-[#F7941E] text-white rounded-2xl font-sans font-black uppercase tracking-widest shadow-xl shadow-[#F7941E]/20 hover:bg-black transition-all duration-500 flex items-center justify-center gap-3 group disabled:opacity-70"
                         >
                             {loading ? "Sending..." : "Send OTP"} <ArrowRight size={18} />
                         </button>
@@ -150,11 +143,11 @@ const ForgotPasswordPage = () => {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="w-full h-14 bg-[#D76B52] text-white rounded-2xl font-sans font-black uppercase tracking-widest shadow-xl shadow-[#D76B52]/20 hover:bg-red-950 transition-all duration-500 flex items-center justify-center gap-3 group disabled:opacity-70"
+                            className="w-full h-14 bg-[#F7941E] text-white rounded-2xl font-sans font-black uppercase tracking-widest shadow-xl shadow-[#F7941E]/20 hover:bg-black transition-all duration-500 flex items-center justify-center gap-3 group disabled:opacity-70"
                         >
                             {loading ? "Verifying..." : "Verify OTP"} <ArrowRight size={18} />
                         </button>
-                        <button type="button" onClick={() => setStep(1)} className="w-full text-center text-[10px] font-black text-secondary/40 uppercase tracking-widest hover:text-[#D76B52]">Change Email</button>
+                        <button type="button" onClick={() => setStep(1)} className="w-full text-center text-[10px] font-black text-secondary/40 uppercase tracking-widest hover:text-[#F7941E]">Change Email</button>
                     </form>
                 )}
 
@@ -195,7 +188,7 @@ const ForgotPasswordPage = () => {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="w-full h-14 bg-[#D76B52] text-white rounded-2xl font-sans font-black uppercase tracking-widest shadow-xl shadow-[#D76B52]/20 hover:bg-red-950 transition-all duration-500 flex items-center justify-center gap-3 group disabled:opacity-70"
+                            className="w-full h-14 bg-[#F7941E] text-white rounded-2xl font-sans font-black uppercase tracking-widest shadow-xl shadow-[#F7941E]/20 hover:bg-black transition-all duration-500 flex items-center justify-center gap-3 group disabled:opacity-70"
                         >
                             {loading ? "Updating..." : "Reset Password"} <ArrowRight size={18} />
                         </button>
@@ -211,7 +204,7 @@ const ForgotPasswordPage = () => {
                         <p className="text-sm text-secondary/60 mb-8">Your password has been successfully updated. You can now sign in with your new password.</p>
                         <Link
                             href="/login"
-                            className="w-full h-14 bg-secondary text-white rounded-2xl font-sans font-black uppercase tracking-widest inline-flex items-center justify-center gap-3 hover:bg-[#D76B52] transition-all duration-500"
+                            className="w-full h-14 bg-[#F7941E] text-white rounded-2xl font-sans font-black uppercase tracking-widest inline-flex items-center justify-center gap-3 hover:bg-black transition-all duration-500"
                         >
                             Back to Sign In
                         </Link>

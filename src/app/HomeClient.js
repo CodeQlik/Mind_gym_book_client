@@ -12,6 +12,7 @@ import ServiceBar from "@/component/ServiceBar";
 import TrendingBooks from "@/component/TrendingBooks";
 
 import BlogSection from "@/component/BlogSection";
+import FAQSection from "@/component/FAQSection";
 
 export default function HomeClient() {
     return (
@@ -24,6 +25,7 @@ export default function HomeClient() {
             <Features />
             <BlogSection />
             <TestimonialSection />
+            <FAQSection />
 
         </>
     );
