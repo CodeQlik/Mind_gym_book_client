@@ -255,10 +255,6 @@ export default function CartPage() {
                                         )}
 
                                         <div className="flex justify-between text-gray-500">
-                                            <span>Shipping</span>
-                                            <span className="text-green-500 font-bold">FREE</span>
-                                        </div>
-                                        <div className="flex justify-between text-gray-500">
                                             <span>{taxLabel}</span>
                                             <span className="font-bold text-secondary">₹{computedTax.toFixed(2)}</span>
                                         </div>
