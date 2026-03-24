@@ -2,7 +2,40 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import api from "@/lib/axios";
 import { toast } from "react-toastify";
 
-const initialState = {
+const loadCartFromStorage = () => {
+    if (typeof window === "undefined") return null;
+    try {
+        const savedCart = localStorage.getItem("cart");
+        if (savedCart) {
+            return JSON.parse(savedCart);
+        }
+    } catch (err) {
+        console.error("Failed to load cart from storage", err);
+    }
+    return null;
+};
+
+const saveCartToStorage = (state) => {
+    if (typeof window === "undefined") return;
+    try {
+        const cartToSave = {
+            items: state.items,
+            totalAmount: state.totalAmount,
+            totalQuantity: state.totalQuantity
+        };
+        localStorage.setItem("cart", JSON.stringify(cartToSave));
+    } catch (err) {
+        console.error("Failed to save cart to storage", err);
+    }
+};
+
+const persistedState = loadCartFromStorage();
+
+const initialState = persistedState ? {
+    ...persistedState,
+    lastAddedItem: null,
+    loading: false
+} : {
     items: [], // [{ id (book_id), cartItemId, title, price, quantity, coverImage, author }]
     totalAmount: 0,
     totalQuantity: 0,
@@ -125,6 +158,8 @@ export const mergeGuestCart = createAsyncThunk(
 
         // If there are guest items, merge them first
         let mergedCount = 0;
+        let failedItems = [];
+
         for (const item of cart.items) {
             if (!item.cartItemId) {
                 try {
@@ -135,12 +170,17 @@ export const mergeGuestCart = createAsyncThunk(
                     mergedCount++;
                 } catch (error) {
                     console.error(`Failed to merge item ${item.id}:`, error);
+                    failedItems.push(item);
                 }
             }
         }
 
         if (mergedCount > 0) {
             toast.success(`${mergedCount} guest items saved to your account!`);
+        }
+        
+        if (failedItems.length > 0) {
+            console.warn(`${failedItems.length} items failed to sync with DB.`);
         }
 
         // Finally, fetch the consolidated cart from the database
@@ -195,6 +235,7 @@ const cartSlice = createSlice({
                 existingItem.totalPrice = existingItem.totalPrice + newItem.price;
             }
             state.totalAmount = state.items.reduce((total, item) => total + (item.price * item.quantity), 0);
+            saveCartToStorage(state);
         },
         updateLocalQuantity(state, action) {
             const { bookId, quantity } = action.payload;
@@ -205,21 +246,24 @@ const cartSlice = createSlice({
                 item.totalPrice = item.price * quantity;
                 state.totalQuantity += diff;
                 state.totalAmount = state.items.reduce((total, item) => total + (item.price * item.quantity), 0);
+                saveCartToStorage(state);
             }
         },
         removeItemFromCart(state, action) {
             const id = action.payload; // bookId
             const existingItem = state.items.find((item) => item.id === id);
             if (existingItem) {
-                state.totalQuantity = state.totalQuantity - existingItem.quantity;
+                state.totalQuantity -= existingItem.quantity;
                 state.items = state.items.filter((item) => item.id !== id);
                 state.totalAmount = state.items.reduce((total, item) => total + (item.price * item.quantity), 0);
+                saveCartToStorage(state);
             }
         },
         clearCart(state) {
             state.items = [];
             state.totalQuantity = 0;
             state.totalAmount = 0;
+            saveCartToStorage(state);
         },
         clearLastAddedItem(state) {
             state.lastAddedItem = null;
@@ -235,6 +279,7 @@ const cartSlice = createSlice({
                 state.items = action.payload;
                 state.totalQuantity = action.payload.reduce((total, item) => total + item.quantity, 0);
                 state.totalAmount = action.payload.reduce((total, item) => total + (item.price * item.quantity), 0);
+                saveCartToStorage(state);
             })
             .addCase(fetchCart.rejected, (state) => {
                 state.loading = false;
@@ -255,6 +300,7 @@ const cartSlice = createSlice({
                     state.totalQuantity = 0;
                     state.totalAmount = 0;
                     state.lastAddedItem = null;
+                    saveCartToStorage(state);
                 }
             );
     }
