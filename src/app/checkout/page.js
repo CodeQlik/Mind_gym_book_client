@@ -96,9 +96,41 @@ function CheckoutPage() {
         }
     };
 
+    let computedSubtotal = 0;
+    let computedTax = 0;
+
+    items.forEach((item) => {
+        const unitPrice = parseFloat(item.price) || 0;
+        const taxRate = parseFloat(item.tax_rate) || 0;
+        const taxType = item.tax_type || "none";
+        const isTaxApplicable = item.tax_applicable === true || item.tax_applicable === 1 || item.tax_applicable === "1" || item.tax_applicable === "true";
+
+        let basePrice, taxAmountPerUnit;
+
+        const effectiveTaxApplicable = isTaxApplicable || taxRate > 0;
+        const effectiveTaxType = (taxType === "none" && taxRate > 0) ? "exclusive" : taxType;
+
+        if (!effectiveTaxApplicable || effectiveTaxType === "none" || taxRate === 0) {
+            basePrice = unitPrice;
+            taxAmountPerUnit = 0;
+        } else if (effectiveTaxType === "exclusive") {
+            basePrice = unitPrice;
+            taxAmountPerUnit = (unitPrice * taxRate) / 100;
+        } else if (effectiveTaxType === "inclusive") {
+            basePrice = unitPrice / (1 + taxRate / 100);
+            taxAmountPerUnit = unitPrice - basePrice;
+        }
+
+        computedSubtotal += basePrice * item.quantity;
+        computedTax += taxAmountPerUnit * item.quantity;
+    });
+
+    const computedTotalAmount = computedSubtotal + computedTax;
     const finalTotal = appliedCoupon 
         ? (typeof appliedCoupon.total_amount === 'number' ? appliedCoupon.total_amount : parseFloat(appliedCoupon.total_amount)) 
-        : totalAmount;
+        : computedTotalAmount;
+
+    const taxLabel = "Tax";
 
     const fetchAddresses = async (isInitial = false) => {
         try {
@@ -468,7 +500,14 @@ function CheckoutPage() {
                                             </div>
                                             <div className="flex-grow">
                                                 <p className="text-[13px] font-bold text-[#1A1A1A] line-clamp-2 leading-snug">{item.title}</p>
-                                                <p className="text-[12px] text-[#888888] font-medium mt-1">Qty: {item.quantity}</p>
+                                                <div className="flex items-center gap-2 mt-1">
+                                                    <p className="text-[12px] text-[#888888] font-medium">Qty: {item.quantity}</p>
+                                                    {parseFloat(item.tax_rate) > 0 && (
+                                                        <span className="px-1.5 py-0.5 bg-[#FFC107]/20 text-[#1A1A1A] rounded text-[9px] font-bold">
+                                                            {parseFloat(item.tax_rate)}% Tax
+                                                        </span>
+                                                    )}
+                                                </div>
                                                 <p className="text-[14px] font-black text-[#1A1A1A] mt-1">₹{(item.price * item.quantity).toLocaleString()}</p>
                                             </div>
                                         </div>
@@ -478,7 +517,12 @@ function CheckoutPage() {
                                 <div className="space-y-4 mb-6 border-t border-[#FFC107]/20 pt-4">
                                     <div className="flex justify-between text-[#666666] text-sm font-medium">
                                         <span>Subtotal ({totalQuantity} items)</span>
-                                        <span className="font-bold text-[#1A1A1A]">₹{totalAmount.toLocaleString()}</span>
+                                        <span className="font-bold text-[#1A1A1A]">₹{computedSubtotal.toFixed(2)}</span>
+                                    </div>
+
+                                    <div className="flex justify-between text-[#666666] text-sm font-medium">
+                                        <span>{taxLabel}</span>
+                                        <span className="font-bold text-[#1A1A1A]">₹{computedTax.toFixed(2)}</span>
                                     </div>
 
                                     {appliedCoupon && (
@@ -500,7 +544,7 @@ function CheckoutPage() {
                                 <div className="border-t border-[#FFC107]/20 pt-4 mb-8">
                                     <div className="flex justify-between items-end">
                                         <span className="text-[#666666] font-bold uppercase tracking-wider text-sm">Total to Pay</span>
-                                        <span className="text-3xl font-black text-[#1A1A1A]">₹{finalTotal.toLocaleString()}</span>
+                                        <span className="text-3xl font-black text-[#1A1A1A]">₹{finalTotal.toFixed(2)}</span>
                                     </div>
                                 </div>
 

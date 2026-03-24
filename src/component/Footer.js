@@ -46,24 +46,11 @@ const Footer = () => {
     return (
         <footer className="bg-[#0A0A0A] text-white font-sans overflow-hidden border-t border-white/5">
             {/* Main Content Area */}
-            <div className="pt-20 pb-12 px-6 md:px-12 max-w-[1440px] mx-auto text-left">
-                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-12 gap-12 md:gap-y-16 lg:gap-4">
+            <div className="pt-10 pb-6 px-6 md:px-12 max-w-[1440px] mx-auto text-left">
+                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-12 gap-8 md:gap-y-10 lg:gap-4">
                     
-                    {/* Brand Section */}
-                    <div className="md:col-span-3 lg:col-span-3 space-y-8">
-                        <Link href="/" className="inline-flex items-center gap-3 group">
-                            <div className="w-10 h-10 bg-primary flex items-center justify-center rounded-sm transition-all duration-300 group-hover:rotate-6 group-hover:shadow-[0_0_20px_rgba(247,148,30,0.3)]">
-                                <span className="text-black font-black text-2xl">M</span>
-                            </div>
-                            <span className="text-white font-black text-2xl tracking-tighter uppercase whitespace-nowrap">Mind Gym Book</span>
-                        </Link>
-                        <p className="text-white/40 text-[13px] leading-relaxed max-w-[280px]">
-                            Elevating the reading experience through curated wisdom and premium literary collections for the modern intellectual.
-                        </p>
-                    </div>
-
                     {/* Company Links Section */}
-                    <div className="md:col-span-1 lg:col-span-2 border-b border-white/5 md:border-none">
+                    <div className="md:col-span-1 lg:col-span-3 border-b border-white/5 md:border-none">
                         <button 
                             onClick={() => toggleSection('company')}
                             className="w-full flex items-center justify-between md:cursor-default md:pointer-events-none group"
@@ -88,7 +75,7 @@ const Footer = () => {
                     </div>
 
                     {/* Customer Service Links Section */}
-                    <div className="md:col-span-1 lg:col-span-2 border-b border-white/5 md:border-none">
+                    <div className="md:col-span-1 lg:col-span-3 border-b border-white/5 md:border-none">
                         <button 
                             onClick={() => toggleSection('customerService')}
                             className="w-full flex items-center justify-between md:cursor-default md:pointer-events-none group"
@@ -113,7 +100,7 @@ const Footer = () => {
                     </div>
 
                     {/* My Account Links Section */}
-                    <div className="md:col-span-1 lg:col-span-2 border-b border-white/5 md:border-none">
+                    <div className="md:col-span-1 lg:col-span-3 border-b border-white/5 md:border-none">
                         <button 
                             onClick={() => toggleSection('account')}
                             className="w-full flex items-center justify-between md:cursor-default md:pointer-events-none group"
@@ -138,8 +125,8 @@ const Footer = () => {
                     </div>
 
                     {/* Contact Section */}
-                    <div className="md:col-span-3 lg:col-span-3 flex flex-col items-center md:items-start gap-10">
-                        <div className="bg-[#121212] border border-white/5 rounded-[1.5rem] p-8 w-full space-y-8 max-w-md md:max-w-xl lg:max-w-none">
+                    <div className="md:col-span-3 lg:col-span-3 flex flex-col items-center md:items-start gap-6">
+                        <div className="bg-[#121212] border border-white/5 rounded-[1.5rem] p-6 w-full space-y-6 max-w-md md:max-w-xl lg:max-w-none">
                             <h4 className="text-[10px] font-black text-primary uppercase tracking-[0.2em]">
                                 Get In Touch
                             </h4>
@@ -194,12 +181,12 @@ const Footer = () => {
             </div>
 
             {/* Bottom Bar */}
-            <div className="border-t border-white/5 py-10 px-6 md:px-12 bg-black">
-                <div className="max-w-[1440px] mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
-                    <p className="text-white/20 text-[10px] font-bold tracking-[0.2em] uppercase">
+            <div className="border-t border-white/5 py-6 px-6 md:px-12 bg-black">
+                <div className="max-w-[1440px] mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+                    <p className="text-white text-[10px] font-bold tracking-[0.2em] uppercase">
                         © 2026 Mind Gym Book. All rights reserved.
                     </p>
-                    <div className="flex items-center gap-8 text-[10px] font-bold uppercase tracking-widest text-white/20">
+                    <div className="flex items-center gap-8 text-[10px] font-bold uppercase tracking-widest text-white">
                         <div className="flex items-center gap-2">
                              <Globe size={14} className="opacity-50" />
                              <span>Global Shipping Available</span>

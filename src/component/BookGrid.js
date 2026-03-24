@@ -13,8 +13,8 @@ const getBookImageUrl = (book) => {
 
     // Handle various field formats (thumbnail object, image string, cover_image object)
     let url = "";
-    if (book.thumbnail?.url) url = book.thumbnail.url;
-    else if (book.cover_image?.url) url = book.cover_image.url;
+    if (book.cover_image?.url) url = book.cover_image.url; // Prefer high-res cover image
+    else if (book.thumbnail?.url) url = book.thumbnail.url;
     else if (typeof book.image === 'string') url = book.image;
     else if (typeof book.thumbnail === 'string') url = book.thumbnail;
 
@@ -136,13 +136,14 @@ export default function BookGrid() {
                                 key={book.id || `grid-${index}`}
                                 className="group bg-white rounded-2xl shadow-[0_20px_50px_rgba(18,18,18,0.05)] border border-gray-100/50 transition-all duration-500 hover:shadow-[0_30px_60px_rgba(18,18,18,0.08)] hover:-translate-y-2 flex flex-col w-full max-w-[320px] sm:max-w-[220px] md:max-w-[270px] overflow-hidden"
                             >
-                                {/* Image Container - Full Width */}
-                                <div className="relative aspect-square w-full overflow-hidden">
+                                {/* Image Container - Fixed Dimensions */}
+                                <div className="relative h-[280px] sm:h-[240px] md:h-[320px] w-full bg-gray-50 overflow-hidden shrink-0">
                                     <Image
                                         src={getBookImageUrl(book)}
                                         alt={book.title}
                                         fill
-                                        className="object-cover transform group-hover:scale-110 transition-transform duration-1000 ease-out"
+                                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                                        className="object-fill transform transition-transform duration-1000 ease-out"
                                         priority={index < 4}
                                     />
 

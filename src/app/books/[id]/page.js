@@ -5,7 +5,7 @@ export async function generateMetadata({ params }) {
 
     try {
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/book/${id}`, {
-            next: { revalidate: 3600 } // Cache for 1 hour
+            cache: 'no-store'
         });
         const result = await res.json();
 
@@ -37,7 +37,7 @@ export default async function BookDetailPage({ params }) {
 
     try {
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/book/${id}`, {
-            next: { revalidate: 3600 }
+            cache: 'no-store'
         });
         const result = await res.json();
         if (result.success) {

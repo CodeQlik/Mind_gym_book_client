@@ -90,12 +90,12 @@ const Features = () => {
                             className="bg-white rounded-[1rem] p-4 flex flex-col transition-all duration-700 hover:shadow-2xl hover:shadow-[#F7941E]/10 hover:-translate-y-3 group border border-gray-100 shadow-sm hover:border-[#F7941E]/20"
                         >
                             {/* Book Cover Image */}
-                            <div className="relative aspect-[4/5] w-full rounded-[1rem] overflow-hidden mb-5 box-shadow-premium">
+                            <div className="relative aspect-[2/3] w-full rounded-[1rem] overflow-hidden mb-5 box-shadow-premium">
                                 <Image
                                     src={book.thumbnail?.url || book.image || "/placeholder-book.jpg"}
                                     alt={book.title}
                                     fill
-                                    className="object-cover transform group-hover:scale-110 transition-transform duration-1000"
+                                    className="object-fill transform transition-transform duration-1000"
                                 />
 
                                 <div className="absolute top-2 left-2 flex flex-col gap-1 z-20">

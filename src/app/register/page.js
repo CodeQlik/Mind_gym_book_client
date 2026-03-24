@@ -4,11 +4,14 @@ import Link from "next/link";
 import { User, Mail, Lock, Eye, EyeOff, ArrowRight, Feather, Phone, Camera, ShieldCheck, Loader2 } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
-import { registerUser, clearError } from "@/redux/slices/authSlice";
+import { registerUser, clearError, googleLoginAction } from "@/redux/slices/authSlice";
 import { toast } from "react-toastify";
 import api from "@/lib/axios";
+import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
 
-const RegisterPage = () => {
+const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+
+const RegisterContent = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [preview, setPreview] = useState(null);
     const [formData, setFormData] = useState({
@@ -92,6 +95,25 @@ const RegisterPage = () => {
         }
     };
 
+    const handleAuthResult = (result) => {
+        if (registerUser.fulfilled.match(result) || googleLoginAction.fulfilled.match(result)) {
+            const loggedInUser = result.payload;
+            toast.success(registerUser.fulfilled.match(result) ? "Account created successfully!" : "Successfully Logged In!");
+
+            setTimeout(() => {
+                const userType = loggedInUser?.user_type || loggedInUser?.user?.user_type;
+                if (userType === "admin") {
+                    router.push("/admin");
+                } else {
+                    router.push("/");
+                }
+            }, 1000);
+        } else if (registerUser.rejected.match(result) || googleLoginAction.rejected.match(result)) {
+            const errorMsg = typeof result.payload === 'string' ? result.payload : result.payload?.message || "Authentication failed";
+            toast.error(errorMsg);
+        }
+    };
+
     const handleRegister = async (e) => {
         e.preventDefault();
 
@@ -121,15 +143,13 @@ const RegisterPage = () => {
         }
 
         const result = await dispatch(registerUser(data));
+        handleAuthResult(result);
+    };
 
-        if (registerUser.fulfilled.match(result)) {
-            toast.success("Account created successfully! Please sign in.");
-            setTimeout(() => {
-                router.push("/login");
-            }, 2000);
-        } else if (registerUser.rejected.match(result)) {
-            const errorMsg = typeof result.payload === 'string' ? result.payload : result.payload?.message || "Registration failed";
-            toast.error(errorMsg);
+    const handleGoogleSuccess = async (credentialResponse) => {
+        if (credentialResponse.credential) {
+            const result = await dispatch(googleLoginAction(credentialResponse.credential));
+            handleAuthResult(result);
         }
     };
 
@@ -171,7 +191,7 @@ const RegisterPage = () => {
                         <label className="text-[10px] font-black text-gray-900 uppercase tracking-[0.15em] pl-1">Full Name</label>
                         <div className="relative group">
                             <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 transition-colors group-focus-within:text-[#F7941E]">
-                                <User size={16} className="text-[#F7941E]"/>
+                                <User size={16} className="text-[#F7941E]" />
                             </span>
                             <input
                                 type="text"
@@ -190,7 +210,7 @@ const RegisterPage = () => {
                         <div className="relative group flex gap-2">
                             <div className="relative flex-1">
                                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 transition-colors group-focus-within:text-[#F7941E]">
-                                    <Mail size={16} className="text-[#F7941E]"/>
+                                    <Mail size={16} className="text-[#F7941E]" />
                                 </span>
                                 <input
                                     type="email"
@@ -263,7 +283,7 @@ const RegisterPage = () => {
                             <label className="text-[10px] font-black text-gray-900 uppercase tracking-[0.15em] pl-1">Phone</label>
                             <div className="relative group">
                                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 transition-colors group-focus-within:text-[#F7941E]">
-                                    <Phone size={16} className="text-[#F7941E]"/>
+                                    <Phone size={16} className="text-[#F7941E]" />
                                 </span>
                                 <input
                                     type="tel"
@@ -281,7 +301,7 @@ const RegisterPage = () => {
                             <label className="text-[10px] font-black text-gray-900 uppercase tracking-[0.15em] pl-1">Alt Phone</label>
                             <div className="relative group">
                                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 transition-colors group-focus-within:text-[#F7941E]">
-                                    <Phone size={16} className="text-[#F7941E]"/>
+                                    <Phone size={16} className="text-[#F7941E]" />
                                 </span>
                                 <input
                                     type="tel"
@@ -300,7 +320,7 @@ const RegisterPage = () => {
                         <label className="text-[10px] font-black text-gray-900 uppercase tracking-[0.15em] pl-1">Password</label>
                         <div className="relative group">
                             <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 transition-colors group-focus-within:text-[#F7941E]">
-                                <Lock size={16} className="text-[#F7941E]"/>
+                                <Lock size={16} className="text-[#F7941E]" />
                             </span>
                             <input
                                 type={showPassword ? "text" : "password"}
@@ -331,6 +351,25 @@ const RegisterPage = () => {
                     </button>
                 </form>
 
+                <div className="mt-8">
+                    <div className="flex items-center gap-4 mb-6">
+                        <div className="h-[1px] flex-1 bg-gray-100" />
+                        <span className="text-[9px] font-black text-gray-300 uppercase tracking-[0.2em]">or continue with</span>
+                        <div className="h-[1px] flex-1 bg-gray-100" />
+                    </div>
+
+                    <div className="flex justify-center">
+                        <GoogleLogin
+                            onSuccess={handleGoogleSuccess}
+                            onError={() => toast.error("Google Login Failed")}
+                            useOneTap
+                            theme="outline"
+                            shape="pill"
+                            width="100%"
+                        />
+                    </div>
+                </div>
+
                 <div className="mt-8 text-center border-t border-gray-50 pt-6">
                     <p className="text-gray-400 text-xs font-sans font-bold">
                         Already have an account?
@@ -341,6 +380,14 @@ const RegisterPage = () => {
                 </div>
             </div>
         </div>
+    );
+};
+
+const RegisterPage = () => {
+    return (
+        <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+            <RegisterContent />
+        </GoogleOAuthProvider>
     );
 };
 

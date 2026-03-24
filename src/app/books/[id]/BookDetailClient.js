@@ -119,7 +119,10 @@ export default function BookDetailClient({ initialBook }) {
                 title: book.title,
                 price: book.price || 25,
                 coverImage: book.thumbnail?.url || book.image || "/placeholder-book.jpg",
-                author: book.author || book.author_name || "Unknown Author"
+                author: book.author || book.author_name || "Unknown Author",
+                tax_applicable: book.tax_applicable,
+                tax_type: book.tax_type,
+                tax_rate: book.tax_rate
             }));
         }
     };
@@ -344,7 +347,7 @@ export default function BookDetailClient({ initialBook }) {
 
                         <p className="text-[#666666] text-lg font-medium mb-8 flex items-center gap-2">
                             By
-                            <span className="text-[#1A1A1A] font-bold pb-0.5 border-b-[2px] border-black hover:text-[#FFC107] hover:border-[#FFC107] transition-colors cursor-pointer">
+                            <span className="text-[#1A1A1A] font-bold">
                                 {book.author || "Evelyn M. Steele"}
                             </span>
                         </p>
@@ -380,15 +383,24 @@ export default function BookDetailClient({ initialBook }) {
                             </div>
 
                             {/* Price */}
-                            <div className="flex items-baseline gap-2">
+                            <div className="flex items-center gap-3">
                                 <span className="text-2xl font-black text-[#1A1A1A]">
                                     ₹{(parseFloat(book.price || 0)).toLocaleString()}
                                 </span>
-                                {hasDiscount && (
-                                    <span className="text-sm text-[#888888] line-through font-medium">
-                                        ₹{(parseFloat(book.original_price || 0)).toLocaleString()}
-                                    </span>
-                                )}
+                                {(() => {
+                                    const original = parseFloat(book.original_price);
+                                    const current = parseFloat(book.price || 0);
+                                    const displayMrp = (original && original > 0 && original > current) ? original : (current > 0 ? current * 1.25 : 0);
+                                    
+                                    if (displayMrp > current) {
+                                        return (
+                                            <span className="text-base text-yellow-500 line-through font-bold">
+                                                ₹{Math.round(displayMrp).toLocaleString()}
+                                            </span>
+                                        );
+                                    }
+                                    return null;
+                                })()}
                             </div>
                         </div>
 
@@ -498,12 +510,15 @@ export default function BookDetailClient({ initialBook }) {
                                     { icon: <Hash size={16} />, label: "ISBN", value: book.isbn || "N/A" },
                                     { icon: <Globe size={16} />, label: "Language", value: book.language || "N/A" },
                                     { icon: <FileText size={16} />, label: "Price", value: `₹${parseFloat(book.price || 0).toFixed(2)}` },
-                                    { icon: <FileText size={16} />, label: "MRP", value: book.original_price ? `₹${parseFloat(book.original_price).toFixed(2)}` : "N/A" },
                                     { icon: <Layers size={16} />, label: "Weight", value: book.weight ? `${book.weight}g` : "N/A" },
                                     { icon: <Building2 size={16} />, label: "Dimensions", value: book.dimensions || "N/A" },
                                     { icon: <BookOpen size={16} />, label: "Condition", value: book.condition || "New" },
                                     { icon: <Truck size={16} />, label: "Stock", value: book.stock !== undefined ? book.stock : "N/A" },
-                                    { icon: <FileText size={16} />, label: "Release", value: book.release_date || (book.created_at ? new Date(book.created_at).toLocaleDateString() : "N/A") }
+                                    { icon: <FileText size={16} />, label: "Tax", value: (() => {
+                                        const taxRate = parseFloat(book.tax_rate) || 0;
+                                        return `${taxRate}%`;
+                                    })() },
+                                    { icon: <FileText size={16} />, label: "Release", value: book.published_date || (book.createdAt || book.created_at ? new Date(book.createdAt || book.created_at).toLocaleDateString() : "N/A") }
                                 ].map((detail, idx) => (
                                     <div key={idx} className="flex items-center justify-between py-3 border-b border-gray-200/60 last:border-0 last:pb-0">
                                         <div className="flex items-center gap-3 text-[#888888]">

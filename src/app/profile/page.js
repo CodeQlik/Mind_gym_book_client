@@ -65,6 +65,12 @@ const ProfilePage = () => {
     const [totalOrders, setTotalOrders] = useState(0);
     const ordersPerPage = 10;
     const [isEditing, setIsEditing] = useState(false);
+    
+    // Email update OTP state
+    const [isEmailOtpModalOpen, setIsEmailOtpModalOpen] = useState(false);
+    const [emailOtp, setEmailOtp] = useState(["", "", "", "", "", ""]);
+    const emailOtpRefs = React.useRef([]);
+    
     const [formData, setFormData] = useState({
         name: "",
         email: "",
@@ -451,15 +457,35 @@ const ProfilePage = () => {
     };
 
     const handleProfileUpdate = async (e) => {
-        e.preventDefault();
+        if (e) e.preventDefault();
+        
+        // Request OTP if email is being changed
+        if (formData.email !== user?.email) {
+            setIsChanging(true);
+            try {
+                const res = await api.post("/users/send-registration-otp", { email: formData.email });
+                if (res.data?.success) {
+                    toast.success(`Verification code sent to ${formData.email}`);
+                    setIsEmailOtpModalOpen(true);
+                }
+            } catch (error) {
+                toast.error(error.response?.data?.message || "Failed to send verification code. Email might be in use.");
+            } finally {
+                setIsChanging(false);
+            }
+            return;
+        }
+
         setIsChanging(true);
         try {
-            const res = await api.put("/users/update-profile", {
+            const payload = {
                 name: formData.name,
-                email: formData.email,
+                email: formData.email, // At this point email is either unchanged or already verified
                 phone: formData.phone,
                 additional_phone: formData.additional_phone
-            });
+            };
+
+            const res = await api.put("/users/update-profile", payload);
             if (res.data?.success) {
                 toast.success("Profile updated successfully!");
                 setIsEditing(false);
@@ -467,6 +493,65 @@ const ProfilePage = () => {
             }
         } catch (error) {
             toast.error(error.response?.data?.message || "Failed to update profile");
+        } finally {
+            setIsChanging(false);
+        }
+    };
+
+    const handleEmailOtpChange = (index, value) => {
+        if (value.length > 1) value = value.slice(value.length - 1);
+        if (!/^\d*$/.test(value)) return;
+
+        const newOtp = [...emailOtp];
+        newOtp[index] = value;
+        setEmailOtp(newOtp);
+
+        if (value !== "" && index < 5) {
+            emailOtpRefs.current[index + 1]?.focus();
+        }
+    };
+
+    const handleEmailOtpKeyDown = (index, e) => {
+        if (e.key === 'Backspace' && !emailOtp[index] && index > 0) {
+            emailOtpRefs.current[index - 1]?.focus();
+        }
+    };
+
+    const submitEmailOtp = async (e) => {
+        e.preventDefault();
+        const otpValue = emailOtp.join("");
+        if (otpValue.length !== 6) {
+            return toast.error("Please enter a valid 6-digit OTP");
+        }
+        
+        setIsChanging(true);
+        try {
+            // First, verify the OTP using backend's existing verified route
+            const verifyRes = await api.post("/users/verify-registration-otp", { 
+                email: formData.email, 
+                otp: otpValue 
+            });
+
+            if (verifyRes.data?.success) {
+                // Once verified, proceed to update the profile Normally
+                const payload = {
+                    name: formData.name,
+                    email: formData.email,
+                    phone: formData.phone,
+                    additional_phone: formData.additional_phone
+                };
+                const updateRes = await api.put("/users/update-profile", payload);
+
+                if (updateRes.data?.success) {
+                    toast.success("Profile updated seamlessly with new verified email!");
+                    setIsEditing(false);
+                    setIsEmailOtpModalOpen(false);
+                    setEmailOtp(["", "", "", "", "", ""]);
+                    dispatch(fetchProfile());
+                }
+            }
+        } catch (error) {
+            toast.error(error.response?.data?.message || "Invalid OTP or failed to verify.");
         } finally {
             setIsChanging(false);
         }
@@ -604,9 +689,6 @@ const ProfilePage = () => {
                     <h3 className="font-black text-[15px] text-[#1A1A1A] uppercase text-center leading-tight">
                         {user.name || user.user?.name || "User"}
                     </h3>
-                    <p className="text-[8px] font-black text-gray-400 mt-1 uppercase tracking-widest text-center">
-                        MEMBER ID: ZEN-{(user.id || 0).toString().padStart(5, '0')}-AV
-                    </p>
                 </div>
 
                 {/* Nav Links */}
@@ -1758,6 +1840,82 @@ const ProfilePage = () => {
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+            {isEmailOtpModalOpen && (
+                <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4 backdrop-blur-sm">
+                    <div className="bg-white w-full max-w-md rounded-[32px] overflow-hidden shadow-2xl relative animate-in fade-in zoom-in duration-300">
+                        {/* Header Image pattern or simple color curve */}
+                        <div className="h-32 bg-[#FFC107] relative flex items-center justify-center overflow-hidden">
+                            <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, black 1px, transparent 0)', backgroundSize: '24px 24px' }}></div>
+                            <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center relative z-10 shadow-lg">
+                                <Mail size={32} className="text-[#1A1A1A] stroke-[2]" />
+                            </div>
+                        </div>
+
+                        {/* Content */}
+                        <div className="p-8 md:p-10 pt-8 text-center bg-white relative">
+                            {/* Close Button */}
+                            <button
+                                onClick={() => setIsEmailOtpModalOpen(false)}
+                                className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center bg-gray-50 text-gray-500 rounded-full hover:bg-gray-100 transition-colors"
+                            >
+                                <X size={16} className="stroke-[3]" />
+                            </button>
+
+                            <h2 className="text-2xl font-black text-[#1A1A1A] mb-3">Verify New Email</h2>
+                            <p className="text-[13px] text-gray-500 mb-8 font-medium">
+                                We've sent a 6-digit verification code to<br />
+                                <strong className="text-[#1A1A1A]">{formData.email}</strong>
+                            </p>
+
+                            <form onSubmit={submitEmailOtp} className="space-y-8">
+                                <div className="flex justify-center gap-2 md:gap-3">
+                                    {emailOtp.map((digit, index) => (
+                                        <input
+                                            key={index}
+                                            ref={(el) => (emailOtpRefs.current[index] = el)}
+                                            type="text"
+                                            maxLength={1}
+                                            value={digit}
+                                            onChange={(e) => handleEmailOtpChange(index, e.target.value)}
+                                            onKeyDown={(e) => handleEmailOtpKeyDown(index, e)}
+                                            className="w-10 h-12 md:w-12 md:h-14 text-center text-xl md:text-2xl font-black rounded-xl bg-gray-50 border border-gray-200 text-[#1A1A1A] focus:bg-white focus:outline-none focus:ring-4 focus:ring-[#FFC107]/20 focus:border-[#FFC107] transition-all"
+                                        />
+                                    ))}
+                                </div>
+
+                                <button
+                                    type="submit"
+                                    disabled={isChanging}
+                                    className="w-full bg-[#1A1A1A] text-white py-4 rounded-2xl font-black text-[12px] uppercase tracking-widest hover:bg-[#FFC107] hover:text-[#1A1A1A] hover:shadow-lg transition-all active:scale-95 disabled:opacity-50 flex justify-center items-center gap-2"
+                                >
+                                    {isChanging ? (
+                                        <>
+                                            <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
+                                            VERIFYING...
+                                        </>
+                                    ) : (
+                                        <>
+                                            VERIFY AND SAVE
+                                            <ArrowRight size={16} className="stroke-[3]" />
+                                        </>
+                                    )}
+                                </button>
+                            </form>
+                            
+                            <div className="mt-6 text-[11px] font-bold text-gray-400">
+                                Didn't receive the code? 
+                                <button 
+                                    onClick={(e) => { e.preventDefault(); handleProfileUpdate(null, null); }}
+                                    disabled={isChanging}
+                                    className="text-[#1A1A1A] ml-1 hover:underline disabled:opacity-50"
+                                >
+                                    Resend
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             )}

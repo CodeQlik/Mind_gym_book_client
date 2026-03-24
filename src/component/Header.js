@@ -75,7 +75,7 @@ export default function Header() {
                 </Link>
 
                 {/* Mobile Menu Button - Moved to Right */}
-                <button 
+                <button
                     onClick={() => setIsMenuOpen(true)}
                     className="lg:hidden p-2 text-black/70 hover:text-primary transition-colors ml-auto"
                 >
@@ -123,7 +123,7 @@ export default function Header() {
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="w-full bg-black/5 border border-transparent focus:border-primary/20 focus:bg-white focus:ring-4 focus:ring-primary/5 rounded-full py-2.5 pl-12 pr-4 text-[13px] font-medium placeholder:text-black/30 outline-none transition-all"
                         />
-                        <button 
+                        <button
                             type="submit"
                             className="absolute right-2 top-1/2 -translate-y-1/2 bg-black text-white text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full hover:bg-primary transition-colors opacity-0 group-focus-within:opacity-100"
                         >
@@ -268,8 +268,8 @@ export default function Header() {
                                     <div className="w-6 h-6 rounded-full overflow-hidden border border-black/10">
                                         {(() => {
                                             const profileUrl = user.profile?.url || user.profile_image || user.avatar || (typeof user.profile === 'string' ? user.profile : null);
-                                            return profileUrl && profileUrl.startsWith('http') ? 
-                                                <img src={profileUrl} className="w-full h-full object-cover" alt="Profile" /> : 
+                                            return profileUrl && profileUrl.startsWith('http') ?
+                                                <img src={profileUrl} className="w-full h-full object-cover" alt="Profile" /> :
                                                 <UserIcon size={14} className="m-auto mt-1 text-secondary" />;
                                         })()}
                                     </div>
@@ -290,9 +290,8 @@ export default function Header() {
                                             key={item.name}
                                             href={item.href}
                                             onClick={() => setIsMenuOpen(false)}
-                                            className={`flex items-center justify-between p-4 rounded-xl font-black text-[11px] uppercase tracking-[0.2em] transition-all ${
-                                                isActive ? "bg-primary/10 text-primary" : "text-black/70 hover:bg-black/5"
-                                            }`}
+                                            className={`flex items-center justify-between p-4 rounded-xl font-black text-[11px] uppercase tracking-[0.2em] transition-all ${isActive ? "bg-primary/10 text-primary" : "text-black/70 hover:bg-black/5"
+                                                }`}
                                         >
                                             {item.name}
                                             {isActive && <div className="w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_8px_rgba(247,148,30,0.8)]"></div>}
@@ -305,8 +304,8 @@ export default function Header() {
                         {/* Drawer Footer */}
                         <div className="p-6 border-t border-black/5 mt-auto">
                             {!user && (
-                                <Link 
-                                    href="/login" 
+                                <Link
+                                    href="/login"
                                     onClick={() => setIsMenuOpen(false)}
                                     className="w-full bg-primary text-white py-4 rounded-xl font-black text-[11px] uppercase tracking-widest flex items-center justify-center gap-3 shadow-lg shadow-primary/20"
                                 >

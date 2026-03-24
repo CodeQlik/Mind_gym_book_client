@@ -138,7 +138,7 @@ const TrendingBooks = () => {
                                     src={getBookImageUrl(book)}
                                     alt={book.title}
                                     fill
-                                    className="object-cover transform group-hover:scale-110 transition-transform duration-1000 ease-out"
+                                    className="object-fill transform transition-transform duration-1000 ease-out"
                                 />
                                 <button
                                     onClick={() => handleToggleWishlist(book.id)}

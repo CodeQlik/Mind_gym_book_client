@@ -8,7 +8,7 @@ import { loginUser, clearError, googleLoginAction } from "@/redux/slices/authSli
 import { toast } from "react-toastify";
 import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
 
-const GOOGLE_CLIENT_ID = "391302444219-88q5i1h8ju8b097e4277frteiis9abiq.apps.googleusercontent.com";
+const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
 
 const LoginContent = () => {
     const [showPassword, setShowPassword] = useState(false);
@@ -136,7 +136,7 @@ const LoginContent = () => {
                     </button>
                 </form>
 
-                {/* <div className="mt-8">
+                <div className="mt-8">
                     <div className="flex items-center gap-4 mb-6">
                         <div className="h-[1px] flex-1 bg-gray-100" />
                         <span className="text-[9px] font-black text-gray-300 uppercase tracking-[0.2em]">or continue with</span>
@@ -153,7 +153,7 @@ const LoginContent = () => {
                             width="100%"
                         />
                     </div>
-                </div> */}
+                </div>
 
                 <div className="mt-8 text-center border-t border-gray-50 pt-6">
                     <p className="text-gray-400 text-xs font-sans font-bold">

@@ -80,7 +80,39 @@ export default function CartPage() {
         toast.info("Coupon removed");
     };
 
-    const finalTotal = appliedCoupon ? appliedCoupon.total_amount : totalAmount;
+    let computedSubtotal = 0;
+    let computedTax = 0;
+
+    items.forEach((item) => {
+        const unitPrice = parseFloat(item.price) || 0;
+        const taxRate = parseFloat(item.tax_rate) || 0;
+        const taxType = item.tax_type || "none";
+        const isTaxApplicable = item.tax_applicable === true || item.tax_applicable === 1 || item.tax_applicable === "1" || item.tax_applicable === "true";
+
+        let basePrice, taxAmountPerUnit;
+
+        const effectiveTaxApplicable = isTaxApplicable || taxRate > 0;
+        const effectiveTaxType = (taxType === "none" && taxRate > 0) ? "exclusive" : taxType;
+
+        if (!effectiveTaxApplicable || effectiveTaxType === "none" || taxRate === 0) {
+            basePrice = unitPrice;
+            taxAmountPerUnit = 0;
+        } else if (effectiveTaxType === "exclusive") {
+            basePrice = unitPrice;
+            taxAmountPerUnit = (unitPrice * taxRate) / 100;
+        } else if (effectiveTaxType === "inclusive") {
+            basePrice = unitPrice / (1 + taxRate / 100);
+            taxAmountPerUnit = unitPrice - basePrice;
+        }
+
+        computedSubtotal += basePrice * item.quantity;
+        computedTax += taxAmountPerUnit * item.quantity;
+    });
+
+    const computedTotalAmount = computedSubtotal + computedTax;
+    const finalTotal = appliedCoupon ? appliedCoupon.total_amount || (computedTotalAmount - appliedCoupon.discount_amount) : computedTotalAmount;
+
+    const taxLabel = "Total Tax";
 
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -134,7 +166,38 @@ export default function CartPage() {
                                                     <Trash2 size={18} />
                                                 </button>
                                             </div>
-                                            <p className="text-gray-400 text-xs mb-4 uppercase tracking-wider font-bold">{item.author}</p>
+                                            <div className="flex justify-between items-center mb-4">
+                                                <div className="flex items-center gap-3">
+                                                    <p className="text-gray-400 text-xs uppercase tracking-wider font-bold">{item.author}</p>
+                                                    {parseFloat(item.tax_rate) > 0 && (
+                                                        <span className="px-2 py-0.5 bg-gray-100 text-gray-500 rounded text-[10px] font-bold">
+                                                            {parseFloat(item.tax_rate)}% Tax
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                {(() => {
+                                                    const unitPrice = parseFloat(item.price) || 0;
+                                                    const taxRate = parseFloat(item.tax_rate) || 0;
+                                                    const taxType = item.tax_type || "none";
+                                                    const isTaxApplicable = item.tax_applicable === true || item.tax_applicable === 1 || item.tax_applicable === "1" || item.tax_applicable === "true";
+                                                    const effectiveTaxApplicable = isTaxApplicable || taxRate > 0;
+                                                    const effectiveTaxType = (taxType === "none" && taxRate > 0) ? "exclusive" : taxType;
+                                                    
+                                                    let taxAmountPerUnit = 0;
+                                                    if (effectiveTaxApplicable && taxRate > 0) {
+                                                        if (effectiveTaxType === "exclusive") {
+                                                            taxAmountPerUnit = (unitPrice * taxRate) / 100;
+                                                        } else if (effectiveTaxType === "inclusive") {
+                                                            const basePrice = unitPrice / (1 + taxRate / 100);
+                                                            taxAmountPerUnit = unitPrice - basePrice;
+                                                        }
+                                                    }
+                                                    const totalTax = taxAmountPerUnit * item.quantity;
+                                                    return totalTax > 0 ? (
+                                                        <p className="text-sm text-black font-bold">+ ₹{totalTax.toFixed(2)}</p>
+                                                    ) : null;
+                                                })()}
+                                            </div>
 
                                             <div className="flex justify-between items-center">
                                                 <div className="flex items-center bg-gray-50 rounded-full p-1 border border-black/5">
@@ -153,7 +216,9 @@ export default function CartPage() {
                                                         <Plus size={14} />
                                                     </button>
                                                 </div>
-                                                <p className="font-black text-primary text-lg">₹{(item.price * item.quantity).toLocaleString()}</p>
+                                                <div className="flex flex-col items-end justify-center">
+                                                    <p className="font-black text-primary text-lg leading-none">₹{(item.price * item.quantity).toLocaleString()}</p>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -176,7 +241,7 @@ export default function CartPage() {
                                     <div className="space-y-4 mb-6">
                                         <div className="flex justify-between text-gray-500">
                                             <span>Subtotal</span>
-                                            <span className="font-bold text-secondary">₹{totalAmount.toLocaleString()}</span>
+                                            <span className="font-bold text-secondary">₹{computedSubtotal.toFixed(2)}</span>
                                         </div>
 
                                         {appliedCoupon && (
@@ -194,8 +259,8 @@ export default function CartPage() {
                                             <span className="text-green-500 font-bold">FREE</span>
                                         </div>
                                         <div className="flex justify-between text-gray-500">
-                                            <span>Tax</span>
-                                            <span className="font-bold text-secondary">₹0.00</span>
+                                            <span>{taxLabel}</span>
+                                            <span className="font-bold text-secondary">₹{computedTax.toFixed(2)}</span>
                                         </div>
                                     </div>
 
@@ -240,7 +305,7 @@ export default function CartPage() {
                                     <div className="border-t border-gray-100 pt-4 mb-8">
                                         <div className="flex justify-between items-end">
                                             <span className="text-gray-500 font-bold">Total</span>
-                                            <span className="text-3xl font-black text-secondary">₹{finalTotal.toLocaleString()}</span>
+                                            <span className="text-3xl font-black text-secondary">₹{finalTotal.toFixed(2)}</span>
                                         </div>
                                     </div>
 

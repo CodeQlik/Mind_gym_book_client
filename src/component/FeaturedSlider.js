@@ -125,7 +125,7 @@ const FeaturedSlider = () => {
                                         src={book.thumbnail?.url || book.image || "/placeholder-book.jpg"}
                                         alt={book.title}
                                         fill
-                                        className="object-cover transition-transform duration-1000 group-hover/card:scale-110"
+                                        className="object-fill transition-transform duration-1000 group-hover/card:scale-110"
                                     />
 
                                     {/* Glassmorphic Quick Actions */}

@@ -28,7 +28,10 @@ export const fetchCart = createAsyncThunk(
                     price: parseFloat(item.price || 0),
                     quantity: item.quantity,
                     coverImage: item.thumbnail?.url || item.thumbnail || "/placeholder-book.jpg",
-                    author: item.author || "Global Author"
+                    author: item.author || "Global Author",
+                    tax_applicable: item.tax_applicable,
+                    tax_type: item.tax_type,
+                    tax_rate: parseFloat(item.tax_rate || 0),
                 }));
             }
             return [];
@@ -182,7 +185,10 @@ const cartSlice = createSlice({
                     quantity: 1,
                     totalPrice: newItem.price,
                     coverImage: newItem.coverImage,
-                    author: newItem.author
+                    author: newItem.author,
+                    tax_applicable: newItem.tax_applicable,
+                    tax_type: newItem.tax_type,
+                    tax_rate: parseFloat(newItem.tax_rate || 0),
                 });
             } else {
                 existingItem.quantity++;
