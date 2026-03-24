@@ -182,20 +182,11 @@ const Footer = () => {
 
             {/* Bottom Bar */}
             <div className="border-t border-white/5 py-6 px-6 md:px-12 bg-black">
-                <div className="max-w-[1440px] mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
-                    <p className="text-white text-[10px] font-bold tracking-[0.2em] uppercase">
+            <hr className="border-white/50"/>
+                <div className="max-w-[1440px] mx-auto flex flex-col md:flex-row justify-center items-center gap-4">
+                    <p className="text-white/50 text-[10px] font-bold tracking-[0.2em] uppercase mt-4">
                         © 2026 Mind Gym Book. All rights reserved.
                     </p>
-                    <div className="flex items-center gap-8 text-[10px] font-bold uppercase tracking-widest text-white">
-                        <div className="flex items-center gap-2">
-                             <Globe size={14} className="opacity-50" />
-                             <span>Global Shipping Available</span>
-                        </div>
-                        <Link href="mailto:contact@mindgym.com" className="flex items-center gap-2 hover:text-white transition-colors">
-                            <Mail size={14} className="opacity-50" />
-                            <span>contact@mindgym.com</span>
-                        </Link>
-                    </div>
                 </div>
             </div>
         </footer>
@@ -203,4 +194,5 @@ const Footer = () => {
 };
 
 export default Footer;
+
 
