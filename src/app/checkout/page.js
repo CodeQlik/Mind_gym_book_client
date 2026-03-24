@@ -36,6 +36,10 @@ function CheckoutPage() {
     // Coupon States
     const [appliedCoupon, setAppliedCoupon] = useState(null);
     const [couponLoading, setCouponLoading] = useState(false);
+
+    // Order Preview State (includes shipping, taxes, etc. from backend)
+    const [orderPreview, setOrderPreview] = useState(null);
+    const [previewLoading, setPreviewLoading] = useState(false);
     
     const [newAddress, setNewAddress] = useState({
         name: "",
@@ -90,11 +94,38 @@ function CheckoutPage() {
             }
         } catch (error) {
             console.error("Coupon validation failed", error);
-            // Don't show toast error here as it might be annoying on page load
+            setAppliedCoupon(null);
         } finally {
             setCouponLoading(false);
         }
     };
+
+    // Fetch Order Preview (Shipping, Tax, Total) from Backend
+    useEffect(() => {
+        const fetchOrderPreview = async () => {
+            if (!token || items.length === 0) return;
+            
+            setPreviewLoading(true);
+            try {
+                const res = await api.post("/orders/preview", {
+                    address_id: selectedAddressId ? parseInt(selectedAddressId) : null,
+                    payment_method: paymentMethod,
+                    coupon_code: appliedCoupon ? appliedCoupon.code : null
+                });
+
+                if (res.data?.success) {
+                    setOrderPreview(res.data.data);
+                }
+            } catch (error) {
+                console.error("Failed to fetch order preview:", error);
+            } finally {
+                setPreviewLoading(false);
+            }
+        };
+
+        const timer = setTimeout(fetchOrderPreview, 500); // Debounce
+        return () => clearTimeout(timer);
+    }, [selectedAddressId, paymentMethod, appliedCoupon, items, token]);
 
     let computedSubtotal = 0;
     let computedTax = 0;
@@ -126,9 +157,13 @@ function CheckoutPage() {
     });
 
     const computedTotalAmount = computedSubtotal + computedTax;
-    const finalTotal = appliedCoupon 
-        ? (typeof appliedCoupon.total_amount === 'number' ? appliedCoupon.total_amount : parseFloat(appliedCoupon.total_amount)) 
-        : computedTotalAmount;
+    
+    // Final values driven by orderPreview (backend) with local fallback
+    const displaySubtotal = orderPreview ? parseFloat(orderPreview.subtotal_amount) : computedSubtotal;
+    const displayTax = orderPreview ? parseFloat(orderPreview.total_tax) : computedTax;
+    const displayShipping = orderPreview ? parseFloat(orderPreview.shipping_charge) : 0;
+    const displayDiscount = orderPreview ? parseFloat(orderPreview.discount_amount) : (appliedCoupon ? appliedCoupon.discount_amount : 0);
+    const displayTotal = orderPreview ? parseFloat(orderPreview.total_amount) : (appliedCoupon ? (appliedCoupon.total_amount || computedTotalAmount - appliedCoupon.discount_amount) : computedTotalAmount);
 
     const taxLabel = "Tax";
 
@@ -517,34 +552,41 @@ function CheckoutPage() {
                                 <div className="space-y-4 mb-6 border-t border-[#FFC107]/20 pt-4">
                                     <div className="flex justify-between text-[#666666] text-sm font-medium">
                                         <span>Subtotal ({totalQuantity} items)</span>
-                                        <span className="font-bold text-[#1A1A1A]">₹{computedSubtotal.toFixed(2)}</span>
+                                        <span className="font-bold text-[#1A1A1A]">₹{displaySubtotal.toFixed(2)}</span>
                                     </div>
 
                                     <div className="flex justify-between text-[#666666] text-sm font-medium">
                                         <span>{taxLabel}</span>
-                                        <span className="font-bold text-[#1A1A1A]">₹{computedTax.toFixed(2)}</span>
+                                        <span className="font-bold text-[#1A1A1A]">₹{displayTax.toFixed(2)}</span>
                                     </div>
 
-                                    {appliedCoupon && (
+                                    {displayDiscount > 0 && (
                                         <div className="flex justify-between text-emerald-600 text-sm font-bold animate-in slide-in-from-right-2">
                                             <div className="flex items-center gap-1">
                                                 <span>Coupon Discount</span>
-                                                <span className="text-[9px] bg-emerald-100 px-1.5 py-0.5 rounded uppercase">{appliedCoupon.code}</span>
+                                                <span className="text-[9px] bg-emerald-100 px-1.5 py-0.5 rounded uppercase">{appliedCoupon?.code}</span>
                                             </div>
-                                            <span>- ₹{appliedCoupon.discount_amount.toLocaleString()}</span>
+                                            <span>- ₹{displayDiscount.toFixed(2)}</span>
                                         </div>
                                     )}
 
                                     <div className="flex justify-between text-[#666666] text-sm font-medium">
                                         <span>Shipping</span>
-                                        <span className="font-bold text-green-600">FREE</span>
+                                        {displayShipping > 0 ? (
+                                            <span className="font-bold text-[#1A1A1A]">₹{displayShipping.toFixed(2)}</span>
+                                        ) : (
+                                            <span className="font-bold text-green-600">FREE</span>
+                                        )}
                                     </div>
                                 </div>
 
                                 <div className="border-t border-[#FFC107]/20 pt-4 mb-8">
                                     <div className="flex justify-between items-end">
                                         <span className="text-[#666666] font-bold uppercase tracking-wider text-sm">Total to Pay</span>
-                                        <span className="text-3xl font-black text-[#1A1A1A]">₹{finalTotal.toFixed(2)}</span>
+                                        <div className="text-right">
+                                            {previewLoading && <span className="text-[10px] text-[#FFC107] animate-pulse block">Calculating...</span>}
+                                            <span className={`text-3xl font-black text-[#1A1A1A] ${previewLoading ? 'opacity-50' : ''}`}>₹{displayTotal.toFixed(2)}</span>
+                                        </div>
                                     </div>
                                 </div>
 

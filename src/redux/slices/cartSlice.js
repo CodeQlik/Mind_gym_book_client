@@ -53,8 +53,12 @@ export const fetchCart = createAsyncThunk(
 
             const response = await api.get("/cart");
             if (response.data.success) {
+                // Backend now returns { items: [], summary: {} }
+                const rawItems = response.data.data.items || [];
+                const summary = response.data.data.summary || {};
+
                 // Map backend structure to frontend structure
-                return (response.data.data || []).map(item => ({
+                const mappedItems = rawItems.map(item => ({
                     id: item.book_id,
                     cartItemId: item.id,
                     title: item.title,
@@ -66,8 +70,10 @@ export const fetchCart = createAsyncThunk(
                     tax_type: item.tax_type,
                     tax_rate: parseFloat(item.tax_rate || 0),
                 }));
+
+                return { items: mappedItems, summary };
             }
-            return [];
+            return { items: [], summary: {} };
         } catch (error) {
             return rejectWithValue(error.response?.data?.message || "Failed to fetch cart");
         }
@@ -175,9 +181,9 @@ export const mergeGuestCart = createAsyncThunk(
             }
         }
 
-        if (mergedCount > 0) {
-            toast.success(`${mergedCount} guest items saved to your account!`);
-        }
+        // if (mergedCount > 0) {
+        //     toast.success(`${mergedCount} guest items saved to your account!`);
+        // }
         
         if (failedItems.length > 0) {
             console.warn(`${failedItems.length} items failed to sync with DB.`);
@@ -276,9 +282,16 @@ const cartSlice = createSlice({
             })
             .addCase(fetchCart.fulfilled, (state, action) => {
                 state.loading = false;
-                state.items = action.payload;
-                state.totalQuantity = action.payload.reduce((total, item) => total + item.quantity, 0);
-                state.totalAmount = action.payload.reduce((total, item) => total + (item.price * item.quantity), 0);
+                const { items, summary } = action.payload;
+                state.items = items || [];
+                // Prefer backend summary if available, else recalculate
+                if (summary && summary.total_amount) {
+                    state.totalAmount = parseFloat(summary.total_amount);
+                    state.totalQuantity = items.reduce((total, item) => total + item.quantity, 0);
+                } else {
+                    state.totalQuantity = state.items.reduce((total, item) => total + item.quantity, 0);
+                    state.totalAmount = state.items.reduce((total, item) => total + (item.price * item.quantity), 0);
+                }
                 saveCartToStorage(state);
             })
             .addCase(fetchCart.rejected, (state) => {
