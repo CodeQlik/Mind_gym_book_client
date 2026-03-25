@@ -41,6 +41,7 @@ export default function OrderDetailsPage({ params }) {
     const [refundReason, setRefundReason] = useState("");
     const [isProcessingAction, setIsProcessingAction] = useState(false);
     const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+    const [cancelReason, setCancelReason] = useState("");
 
     const fetchOrderDetails = async () => {
         try {
@@ -63,13 +64,17 @@ export default function OrderDetailsPage({ params }) {
     };
 
     const handleCancelOrder = () => {
+        setCancelReason("");
         setIsCancelModalOpen(true);
     };
 
     const handleConfirmCancel = async () => {
+        if (!cancelReason.trim() || cancelReason.trim().length < 5) {
+            return toast.error("Please provide a reason (at least 5 characters)");
+        }
         try {
             setIsProcessingAction(true);
-            const res = await api.post(`/orders/cancel/${order.id}`);
+            const res = await api.post(`/orders/cancel/${order.id}`, { reason: cancelReason });
             if (res.data?.success) {
                 const updatedOrder = res.data.data;
                 setIsCancelModalOpen(false);
@@ -77,14 +82,13 @@ export default function OrderDetailsPage({ params }) {
 
                 // If it was a prepaid order, inform user that refund is initiated
                 const isPrepaid = String(updatedOrder.payment_method || '').toLowerCase() !== 'cod' || updatedOrder.payment_status === 'paid';
-                
+
                 if (isPrepaid) {
                     toast.success("Order cancelled. Refund has been automatically initiated.");
-                    setIsRefundModalOpen(true);
                 } else {
                     toast.success("Order cancelled successfully");
                 }
-                
+
                 fetchOrderDetails();
             }
         } catch (error) {
@@ -141,13 +145,13 @@ export default function OrderDetailsPage({ params }) {
                     const data = res.data.data || {};
                     const booksSource = data.books || data;
                     let allBooks = [];
-                    
+
                     if (Array.isArray(booksSource)) {
                         allBooks = booksSource;
                     } else if (booksSource && typeof booksSource === 'object') {
                         allBooks = Object.values(booksSource).flat().filter(book => book !== null && typeof book === 'object');
                     }
-                    
+
                     setRelatedBooks(allBooks.slice(0, 5));
                 }
             } catch (err) {
@@ -237,10 +241,10 @@ export default function OrderDetailsPage({ params }) {
                             <div className="flex items-center gap-4 flex-wrap">
                                 <h1 className="text-2xl font-black text-[#1A1A1A] tracking-tighter">Order #{orderNo}</h1>
                                 <span className={`px-4 py-1.5 rounded-full text-[11px] font-black uppercase tracking-widest border ${order.delivery_status === 'delivered' ? 'bg-green-50 border-green-100 text-green-600' :
-                                        order.delivery_status === 'shipped' ? 'bg-blue-50 border-blue-100 text-blue-600' :
-                                            order.delivery_status === 'cancelled' ? 'bg-red-50 border-red-100 text-red-600' :
-                                                ['returned', 'refunded'].includes(order.delivery_status) ? 'bg-purple-50 border-purple-100 text-purple-600' :
-                                                    'bg-[#FFFbf0] border-[#FFECB3] text-[#A67C00]'
+                                    order.delivery_status === 'shipped' ? 'bg-blue-50 border-blue-100 text-blue-600' :
+                                        order.delivery_status === 'cancelled' ? 'bg-red-50 border-red-100 text-red-600' :
+                                            ['returned', 'refunded'].includes(order.delivery_status) ? 'bg-purple-50 border-purple-100 text-purple-600' :
+                                                'bg-[#FFFbf0] border-[#FFECB3] text-[#A67C00]'
                                     }`}>
                                     {order.delivery_status}
                                 </span>
@@ -394,7 +398,7 @@ export default function OrderDetailsPage({ params }) {
                                     <p className="text-[#999999] text-[14px] font-medium mt-1">Request a return, exchange, or report a missing item.</p>
                                 </div>
                             </div>
-                            <button 
+                            <button
                                 onClick={() => router.push('/profile?tab=support')}
                                 className="px-6 py-3 bg-[#1A1A1A] text-white rounded-xl text-[13px] font-black uppercase tracking-widest hover:bg-black transition-all flex items-center gap-2 group whitespace-nowrap"
                             >
@@ -549,29 +553,44 @@ export default function OrderDetailsPage({ params }) {
                 {isCancelModalOpen && (
                     <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
                         <div className="absolute inset-0 bg-[#1A1A1A]/80 backdrop-blur-sm" onClick={() => setIsCancelModalOpen(false)}></div>
-                        <div className="bg-white w-full max-w-sm rounded-[32px] overflow-hidden shadow-2xl relative animate-in fade-in zoom-in duration-300">
-                            <div className="p-8 text-center">
+                        <div className="bg-white w-full max-w-md rounded-[32px] overflow-hidden shadow-2xl relative animate-in fade-in zoom-in duration-300">
+                            <div className="p-8 text-center pb-0">
                                 <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-6">
                                     <XCircle size={32} className="text-red-500" />
                                 </div>
                                 <h3 className="font-black text-xl text-[#1A1A1A] mb-2">Cancel Order?</h3>
-                                <p className="text-[12px] text-gray-400 font-medium leading-relaxed">Are you sure you want to cancel this order? This action cannot be undone and your items will be returned to stock.</p>
+                                <p className="text-[12px] text-gray-400 font-medium leading-relaxed mb-6">Are you sure you want to cancel this order? This action cannot be undone and your items will be returned to stock.</p>
                             </div>
 
-                            <div className="p-8 pt-0 flex gap-3">
-                                <button
-                                    onClick={() => setIsCancelModalOpen(false)}
-                                    className="flex-1 px-6 py-3 rounded-2xl font-black text-[11px] uppercase tracking-widest text-[#1A1A1A] border border-gray-100 hover:bg-gray-50 transition-all"
-                                >
-                                    No, Keep it
-                                </button>
-                                <button
-                                    onClick={handleConfirmCancel}
-                                    disabled={isProcessingAction}
-                                    className="flex-1 bg-red-500 text-white px-6 py-3 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-red-600 transition-all shadow-xl active:scale-95 disabled:opacity-50"
-                                >
-                                    {isProcessingAction ? "..." : "Yes, Cancel"}
-                                </button>
+                            <div className="px-8 pb-8 space-y-4">
+                                <div className="space-y-2">
+                                    <label className="text-[9px] font-black text-gray-300 uppercase tracking-widest pl-1">Reason for Cancellation</label>
+                                    <textarea
+                                        rows={3}
+                                        value={cancelReason}
+                                        onChange={(e) => setCancelReason(e.target.value)}
+                                        className="w-full bg-gray-50 border border-gray-100 rounded-xl px-5 py-3.5 font-bold text-[#1A1A1A] text-sm focus:outline-none focus:border-red-500 transition-all resize-none"
+                                        placeholder="Tell us why you're cancelling (e.g., Changed my mind, found a better price)"
+                                        required
+                                    />
+                                    <p className="text-[10px] text-gray-400 italic">Min. 5 characters required</p>
+                                </div>
+
+                                <div className="flex gap-3">
+                                    <button
+                                        onClick={() => setIsCancelModalOpen(false)}
+                                        className="flex-1 px-6 py-3 rounded-2xl font-black text-[11px] uppercase tracking-widest text-[#1A1A1A] border border-gray-100 hover:bg-gray-50 transition-all"
+                                    >
+                                        No, Keep it
+                                    </button>
+                                    <button
+                                        onClick={handleConfirmCancel}
+                                        disabled={isProcessingAction}
+                                        className="flex-1 bg-red-500 text-white px-6 py-3 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-red-600 transition-all shadow-xl active:scale-95 disabled:opacity-50"
+                                    >
+                                        {isProcessingAction ? "..." : "Yes, Cancel"}
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -586,51 +605,6 @@ export default function OrderDetailsPage({ params }) {
                                     <RefreshCw className="text-purple-500" /> {String(order.delivery_status || '').toLowerCase() === 'delivered' ? 'Return Order' : 'Request Refund'}
                                 </h3>
                                 <p className="text-[11px] text-gray-400 font-medium tracking-tight mt-1">Please provide a valid reason for your {String(order.delivery_status || '').toLowerCase() === 'delivered' ? 'return' : 'refund'} request for Order {orderNo}.</p>
-                            </div>
-
-                            <form onSubmit={handleRefundRequest} className="p-8 space-y-6">
-                                <div className="space-y-2">
-                                    <label className="text-[9px] font-black text-gray-300 uppercase tracking-widest pl-1">Refund Reason</label>
-                                    <textarea
-                                        rows={4}
-                                        value={refundReason}
-                                        onChange={(e) => setRefundReason(e.target.value)}
-                                        className="w-full bg-gray-50 border border-gray-100 rounded-xl px-5 py-3.5 font-bold text-[#1A1A1A] text-sm focus:outline-none focus:border-purple-500 transition-all resize-none"
-                                        placeholder="Explain why you want a refund (e.g. Damaged product, Wrong item sent)"
-                                        required
-                                    />
-                                </div>
-
-                                <div className="flex gap-4 pt-2">
-                                    <button
-                                        type="button"
-                                        onClick={() => setIsRefundModalOpen(false)}
-                                        className="flex-1 px-6 py-3 rounded-2xl font-black text-[11px] uppercase tracking-widest text-[#1A1A1A] border border-gray-100 hover:bg-gray-50 transition-all"
-                                    >
-                                        Cancel
-                                    </button>
-                                    <button
-                                        type="submit"
-                                        disabled={isProcessingAction}
-                                        className="flex-[2] bg-[#1A1A1A] text-white px-6 py-3 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-purple-600 transition-all shadow-xl active:scale-95 disabled:opacity-50"
-                                    >
-                                        {isProcessingAction ? "Submitting..." : "Submit Request"}
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                )}
-                {/* REFUND MODAL */}
-                {isRefundModalOpen && (
-                    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
-                        <div className="absolute inset-0 bg-[#1A1A1A]/80 backdrop-blur-sm" onClick={() => setIsRefundModalOpen(false)}></div>
-                        <div className="bg-white w-full max-w-md rounded-[32px] overflow-hidden shadow-2xl relative animate-in fade-in zoom-in duration-300">
-                            <div className="p-8 border-b border-gray-100">
-                                <h3 className="font-black text-xl text-[#1A1A1A] flex items-center gap-3">
-                                    <RefreshCw className="text-purple-500" /> Request Refund
-                                </h3>
-                                <p className="text-[11px] text-gray-400 font-medium tracking-tight mt-1">Please provide a valid reason for your refund request for Order {orderNo}.</p>
                             </div>
 
                             <form onSubmit={handleRefundRequest} className="p-8 space-y-6">

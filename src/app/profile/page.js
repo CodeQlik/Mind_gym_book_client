@@ -65,12 +65,12 @@ const ProfilePage = () => {
     const [totalOrders, setTotalOrders] = useState(0);
     const ordersPerPage = 10;
     const [isEditing, setIsEditing] = useState(false);
-    
+
     // Email update OTP state
     const [isEmailOtpModalOpen, setIsEmailOtpModalOpen] = useState(false);
     const [emailOtp, setEmailOtp] = useState(["", "", "", "", "", ""]);
     const emailOtpRefs = React.useRef([]);
-    
+
     const [formData, setFormData] = useState({
         name: "",
         email: "",
@@ -255,37 +255,39 @@ const ProfilePage = () => {
     const [refundReason, setRefundReason] = useState("");
     const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
     const [cancelOrderId, setCancelOrderId] = useState(null);
+    const [cancelReason, setCancelReason] = useState("");
     const [isProcessingAction, setIsProcessingAction] = useState(false);
 
     const handleCancelOrder = (orderId) => {
         setCancelOrderId(orderId);
+        setCancelReason("");
         setIsCancelModalOpen(true);
     };
 
     const handleConfirmCancel = async () => {
+        if (!cancelReason.trim() || cancelReason.trim().length < 5) {
+            return toast.error("Please provide a reason (at least 5 characters)");
+        }
         try {
             setIsProcessingAction(true);
-            const res = await api.post(`/orders/cancel/${cancelOrderId}`);
+            const res = await api.post(`/orders/cancel/${cancelOrderId}`, { reason: cancelReason });
             if (res.data?.success) {
                 const updatedOrder = res.data.data;
                 setIsCancelModalOpen(false);
                 setCancelOrderId(null);
-                
+
                 // Update local state immediately for "instant" feel
                 setOrders(prevOrders => prevOrders.map(o => o.id === updatedOrder.id ? updatedOrder : o));
-                
+
                 // If it was a prepaid order, inform user that refund is initiated
                 const isPrepaid = String(updatedOrder.payment_method || '').toLowerCase() !== 'cod' || updatedOrder.payment_status === 'paid';
-                
+
                 if (isPrepaid) {
                     toast.success("Order cancelled. Refund has been automatically initiated.");
-                    // Still open the modal so they can provide a specific reason if they wish
-                    setRefundOrderId(updatedOrder.id);
-                    setIsRefundModalOpen(true);
                 } else {
                     toast.success("Order cancelled successfully");
                 }
-                
+
                 fetchOrders();
             }
         } catch (error) {
@@ -458,7 +460,7 @@ const ProfilePage = () => {
 
     const handleProfileUpdate = async (e) => {
         if (e) e.preventDefault();
-        
+
         // Request OTP if email is being changed
         if (formData.email !== user?.email) {
             setIsChanging(true);
@@ -523,13 +525,13 @@ const ProfilePage = () => {
         if (otpValue.length !== 6) {
             return toast.error("Please enter a valid 6-digit OTP");
         }
-        
+
         setIsChanging(true);
         try {
             // First, verify the OTP using backend's existing verified route
-            const verifyRes = await api.post("/users/verify-registration-otp", { 
-                email: formData.email, 
-                otp: otpValue 
+            const verifyRes = await api.post("/users/verify-registration-otp", {
+                email: formData.email,
+                otp: otpValue
             });
 
             if (verifyRes.data?.success) {
@@ -724,10 +726,10 @@ const ProfilePage = () => {
 
             {/* Right Content Area */}
             <main className={`${view === "content" ? "block" : "hidden"} lg:block flex-1 w-full px-6 md:px-12 lg:px-28 pt-24 lg:pt-20 pb-20 relative z-10 overflow-x-hidden`}>
-                
+
                 {/* Mobile Back Button */}
                 <div className="lg:hidden mb-8">
-                    <button 
+                    <button
                         onClick={() => setView("menu")}
                         className="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-gray-400 bg-gray-50 px-4 py-2 rounded-xl"
                     >
@@ -1464,15 +1466,15 @@ const ProfilePage = () => {
                                                                 <Clock size={12} /> Refunded
                                                             </div>
                                                         ) : (
-                                                                <button
-                                                                    onClick={() => {
-                                                                        setRefundOrderId(order.id);
-                                                                        setIsRefundModalOpen(true);
-                                                                    }}
-                                                                    className="bg-purple-50 text-purple-600 font-bold text-[10px] md:text-[11px] px-3 md:px-4 py-2 rounded-lg flex items-center gap-1 hover:bg-purple-100 transition-all active:scale-95 whitespace-nowrap"
-                                                                >
-                                                                    <RefreshCw size={12} /> {String(order.delivery_status).toLowerCase() === 'delivered' ? 'Return' : 'Refund'}
-                                                                </button>
+                                                            <button
+                                                                onClick={() => {
+                                                                    setRefundOrderId(order.id);
+                                                                    setIsRefundModalOpen(true);
+                                                                }}
+                                                                className="bg-purple-50 text-purple-600 font-bold text-[10px] md:text-[11px] px-3 md:px-4 py-2 rounded-lg flex items-center gap-1 hover:bg-purple-100 transition-all active:scale-95 whitespace-nowrap"
+                                                            >
+                                                                <RefreshCw size={12} /> {String(order.delivery_status).toLowerCase() === 'delivered' ? 'Return' : 'Refund'}
+                                                            </button>
                                                         )
                                                     )}
 
@@ -1641,8 +1643,8 @@ const ProfilePage = () => {
                                                     <div className="flex justify-between items-start mb-2">
                                                         <span className="text-[10px] font-black text-gray-300 uppercase tracking-widest">#{ticket.ticket_id || ticket.id.toString().slice(-6).toUpperCase()}</span>
                                                         <div className={`px-3 py-1 rounded-md border text-[9px] font-black uppercase tracking-widest ${ticket.status === 'open' ? 'bg-blue-50 text-blue-500 border-blue-100' :
-                                                                ticket.status === 'resolved' ? 'bg-emerald-50 text-emerald-500 border-emerald-100' :
-                                                                    'bg-gray-50 text-gray-400 border-gray-100'
+                                                            ticket.status === 'resolved' ? 'bg-emerald-50 text-emerald-500 border-emerald-100' :
+                                                                'bg-gray-50 text-gray-400 border-gray-100'
                                                             }`}>
                                                             {ticket.status}
                                                         </div>
@@ -1762,29 +1764,44 @@ const ProfilePage = () => {
             {isCancelModalOpen && (
                 <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
                     <div className="absolute inset-0 bg-[#1A1A1A]/80 backdrop-blur-sm" onClick={() => setIsCancelModalOpen(false)}></div>
-                    <div className="bg-white w-full max-w-sm rounded-[32px] overflow-hidden shadow-2xl relative animate-in fade-in zoom-in duration-300">
-                        <div className="p-8 text-center">
+                    <div className="bg-white w-full max-w-md rounded-[32px] overflow-hidden shadow-2xl relative animate-in fade-in zoom-in duration-300">
+                        <div className="p-8 text-center pb-0">
                             <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-6">
                                 <XCircle size={32} className="text-red-500" />
                             </div>
                             <h3 className="font-black text-xl text-[#1A1A1A] mb-2">Cancel Order?</h3>
-                            <p className="text-[12px] text-gray-400 font-medium leading-relaxed">Are you sure you want to cancel this order? This action cannot be undone and your items will be returned to stock.</p>
+                            <p className="text-[12px] text-gray-400 font-medium leading-relaxed mb-6">Are you sure you want to cancel this order? This action cannot be undone and your items will be returned to stock.</p>
                         </div>
 
-                        <div className="p-8 pt-0 flex gap-3">
-                            <button
-                                onClick={() => setIsCancelModalOpen(false)}
-                                className="flex-1 px-6 py-3 rounded-2xl font-black text-[11px] uppercase tracking-widest text-[#1A1A1A] border border-gray-100 hover:bg-gray-50 transition-all"
-                            >
-                                No, Keep it
-                            </button>
-                            <button
-                                onClick={handleConfirmCancel}
-                                disabled={isProcessingAction}
-                                className="flex-1 bg-red-500 text-white px-6 py-3 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-red-600 transition-all shadow-xl active:scale-95 disabled:opacity-50"
-                            >
-                                {isProcessingAction ? "..." : "Yes, Cancel"}
-                            </button>
+                        <div className="px-8 pb-8 space-y-4">
+                            <div className="space-y-2">
+                                <label className="text-[9px] font-black text-gray-300 uppercase tracking-widest pl-1">Reason for Cancellation</label>
+                                <textarea
+                                    rows={3}
+                                    value={cancelReason}
+                                    onChange={(e) => setCancelReason(e.target.value)}
+                                    className="w-full bg-gray-50 border border-gray-100 rounded-xl px-5 py-3.5 font-bold text-[#1A1A1A] text-sm focus:outline-none focus:border-red-500 transition-all resize-none"
+                                    placeholder="Tell us why you're cancelling (e.g., Changed my mind, found a better price)"
+                                    required
+                                />
+                                <p className="text-[10px] text-gray-400 italic">Min. 5 characters required</p>
+                            </div>
+
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => setIsCancelModalOpen(false)}
+                                    className="flex-1 px-6 py-3 rounded-2xl font-black text-[11px] uppercase tracking-widest text-[#1A1A1A] border border-gray-100 hover:bg-gray-50 transition-all"
+                                >
+                                    No, Keep it
+                                </button>
+                                <button
+                                    onClick={handleConfirmCancel}
+                                    disabled={isProcessingAction}
+                                    className="flex-1 bg-red-500 text-white px-6 py-3 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-red-600 transition-all shadow-xl active:scale-95 disabled:opacity-50"
+                                >
+                                    {isProcessingAction ? "..." : "Yes, Cancel"}
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1798,15 +1815,15 @@ const ProfilePage = () => {
                         <div className="p-8 border-b border-gray-100">
                             <h3 className="font-black text-xl text-[#1A1A1A] flex items-center gap-3">
                                 <RefreshCw className="text-purple-500" /> {
-                                    orders.find(o => o.id === refundOrderId)?.delivery_status?.toLowerCase() === 'delivered' 
-                                    ? 'Return Order' 
-                                    : 'Request Refund'
+                                    orders.find(o => o.id === refundOrderId)?.delivery_status?.toLowerCase() === 'delivered'
+                                        ? 'Return Order'
+                                        : 'Request Refund'
                                 }
                             </h3>
                             <p className="text-[11px] text-gray-400 font-medium tracking-tight mt-1">Please provide a valid reason for your {
-                                orders.find(o => o.id === refundOrderId)?.delivery_status?.toLowerCase() === 'delivered' 
-                                ? 'return' 
-                                : 'refund'
+                                orders.find(o => o.id === refundOrderId)?.delivery_status?.toLowerCase() === 'delivered'
+                                    ? 'return'
+                                    : 'refund'
                             } request.</p>
                         </div>
 
@@ -1904,10 +1921,10 @@ const ProfilePage = () => {
                                     )}
                                 </button>
                             </form>
-                            
+
                             <div className="mt-6 text-[11px] font-bold text-gray-400">
-                                Didn't receive the code? 
-                                <button 
+                                Didn't receive the code?
+                                <button
                                     onClick={(e) => { e.preventDefault(); handleProfileUpdate(null, null); }}
                                     disabled={isChanging}
                                     className="text-[#1A1A1A] ml-1 hover:underline disabled:opacity-50"
