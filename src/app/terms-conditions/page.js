@@ -123,6 +123,7 @@ export default function TermsConditions() {
                     <p>
                         However, we do not guarantee that all descriptions, images, or information are completely error-free. We reserve the right to correct errors or update product information at any time.
                     </p>
+                    
                 </div>
 
                 <div className="policy-section">

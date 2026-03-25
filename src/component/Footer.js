@@ -29,10 +29,11 @@ const Footer = () => {
         ],
         customerService: [
             { name: "Help Center", path: "/support" },
-            { name: "Support Tickets", path: "/support" },
-            { name: "Shipping Info", path: "/shipping-policy" },
+            { name: "Shipping Policy", path: "/shipping-policy" },
             { name: "Refund Policy", path: "/refund-policy" },
             { name: "Return Policy", path: "/return-policy" },
+            { name: "Privacy Policy", path: "/privacy-policy" },
+            { name: "Terms & Conditions", path: "/terms-conditions" },
         ],
         account: [
             { name: "Login / Register", path: "/login" },
@@ -48,19 +49,19 @@ const Footer = () => {
             {/* Main Content Area */}
             <div className="pt-10 pb-6 px-6 md:px-12 max-w-[1440px] mx-auto text-left">
                 <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-12 gap-8 md:gap-y-10 lg:gap-4">
-                    
+
                     {/* Company Links Section */}
                     <div className="md:col-span-1 lg:col-span-3 border-b border-white/5 md:border-none">
-                        <button 
+                        <button
                             onClick={() => toggleSection('company')}
                             className="w-full flex items-center justify-between md:cursor-default md:pointer-events-none group"
                         >
                             <h4 className="text-[10px] font-black text-primary uppercase tracking-[0.25em] py-4 md:py-0 md:mb-8">
                                 Company
                             </h4>
-                            <ChevronDown 
-                                size={14} 
-                                className={`md:hidden transition-transform duration-300 ${openSection === 'company' ? 'rotate-180 text-primary' : 'text-white/30'}`} 
+                            <ChevronDown
+                                size={14}
+                                className={`md:hidden transition-transform duration-300 ${openSection === 'company' ? 'rotate-180 text-primary' : 'text-white/30'}`}
                             />
                         </button>
                         <ul className={`space-y-4 overflow-hidden transition-all duration-300 ease-in-out md:max-h-none ${openSection === 'company' ? 'max-h-60 mb-8' : 'max-h-0 md:max-h-none mb-0 md:mb-0'}`}>
@@ -76,16 +77,16 @@ const Footer = () => {
 
                     {/* Customer Service Links Section */}
                     <div className="md:col-span-1 lg:col-span-3 border-b border-white/5 md:border-none">
-                        <button 
+                        <button
                             onClick={() => toggleSection('customerService')}
                             className="w-full flex items-center justify-between md:cursor-default md:pointer-events-none group"
                         >
                             <h4 className="text-[10px] font-black text-primary uppercase tracking-[0.25em] py-4 md:py-0 md:mb-8">
                                 Customer Service
                             </h4>
-                            <ChevronDown 
-                                size={14} 
-                                className={`md:hidden transition-transform duration-300 ${openSection === 'customerService' ? 'rotate-180 text-primary' : 'text-white/30'}`} 
+                            <ChevronDown
+                                size={14}
+                                className={`md:hidden transition-transform duration-300 ${openSection === 'customerService' ? 'rotate-180 text-primary' : 'text-white/30'}`}
                             />
                         </button>
                         <ul className={`space-y-4 overflow-hidden transition-all duration-300 ease-in-out md:max-h-none ${openSection === 'customerService' ? 'max-h-60 mb-8' : 'max-h-0 md:max-h-none mb-0 md:mb-0'}`}>
@@ -101,16 +102,16 @@ const Footer = () => {
 
                     {/* My Account Links Section */}
                     <div className="md:col-span-1 lg:col-span-3 border-b border-white/5 md:border-none">
-                        <button 
+                        <button
                             onClick={() => toggleSection('account')}
                             className="w-full flex items-center justify-between md:cursor-default md:pointer-events-none group"
                         >
                             <h4 className="text-[10px] font-black text-primary uppercase tracking-[0.25em] py-4 md:py-0 md:mb-8">
                                 My Account
                             </h4>
-                            <ChevronDown 
-                                size={14} 
-                                className={`md:hidden transition-transform duration-300 ${openSection === 'account' ? 'rotate-180 text-primary' : 'text-white/30'}`} 
+                            <ChevronDown
+                                size={14}
+                                className={`md:hidden transition-transform duration-300 ${openSection === 'account' ? 'rotate-180 text-primary' : 'text-white/30'}`}
                             />
                         </button>
                         <ul className={`space-y-4 overflow-hidden transition-all duration-300 ease-in-out md:max-h-none ${openSection === 'account' ? 'max-h-60 mb-8' : 'max-h-0 md:max-h-none mb-0 md:mb-0'}`}>
@@ -130,7 +131,7 @@ const Footer = () => {
                             <h4 className="text-[10px] font-black text-primary uppercase tracking-[0.2em]">
                                 Get In Touch
                             </h4>
-                            
+
                             <div className="space-y-6">
                                 <div className="flex items-center gap-4">
                                     <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center shrink-0 border border-white/5">
@@ -167,9 +168,9 @@ const Footer = () => {
                         {/* Social Links */}
                         <div className="flex items-center gap-3 pr-2">
                             {[Facebook, Instagram, Twitter, Youtube].map((Icon, idx) => (
-                                <a 
-                                    key={idx} 
-                                    href="#" 
+                                <a
+                                    key={idx}
+                                    href="#"
                                     className="w-11 h-11 rounded-full border border-white/10 flex items-center justify-center text-white/40 hover:bg-primary hover:text-black hover:border-primary transition-all duration-300 transform hover:-translate-y-1"
                                 >
                                     <Icon size={18} className="group-hover:text-black text-white" />
@@ -182,7 +183,7 @@ const Footer = () => {
 
             {/* Bottom Bar */}
             <div className="border-t border-white/5 py-6 px-6 md:px-12 bg-black">
-            <hr className="border-white/50"/>
+                <hr className="border-white/50" />
                 <div className="max-w-[1440px] mx-auto flex flex-col md:flex-row justify-center items-center gap-4">
                     <p className="text-white/50 text-[10px] font-bold tracking-[0.2em] uppercase mt-4">
                         © 2026 Mind Gym Book. All rights reserved.
